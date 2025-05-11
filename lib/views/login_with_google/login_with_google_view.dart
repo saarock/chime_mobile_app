@@ -1,16 +1,17 @@
+import 'package:chime/viewmodels/auth_view_model.dart';
 import 'package:chime/widgets/custom_app.dart';
+import 'package:chime/widgets/google_signIn_button.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:provider/provider.dart';
 
 class LoginWithGoogleView extends StatelessWidget {
   const LoginWithGoogleView({super.key});
 
-  // Initialize GoogleSignIn
-  static final GoogleSignIn _googleSignIn = GoogleSignIn();
-
   @override
   Widget build(BuildContext context) {
+    final authVM = Provider.of<AuthViewModel>(context);
+
     return Scaffold(
       appBar: CustomAppBar(title: "Login"),
       body: Container(
@@ -37,30 +38,7 @@ class LoginWithGoogleView extends StatelessWidget {
               style: GoogleFonts.poppins(color: Colors.grey[700], fontSize: 16),
             ),
             const SizedBox(height: 40),
-            ElevatedButton.icon(
-              icon: Image.asset('assets/images/google_logo.png', height: 24),
-              label: Text(
-                'Sign in with Google',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                elevation: 4,
-                shadowColor: Colors.black.withValues(alpha: 0.1),
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Colors.grey),
-                ),
-              ),
-              onPressed: () {
-                // TODO: Add sign-in logic
-              },
-            ),
+            GoogleSignInButton(),
           ],
         ),
       ),
