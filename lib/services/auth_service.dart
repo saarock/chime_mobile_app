@@ -1,30 +1,40 @@
-import "dart:convert";
-
-import "package:http/http.dart" as http;
+import "package:chime/models/user_model.dart";
+import "package:chime/services/api_service.dart";
+import "package:chime/utils/token_storage.dart";
+import "package:dio/dio.dart";
 
 class AuthService {
-  static const String url = "http://localhost:8000/api/v1/users/";
+  final Dio _dio = ApiService.getDio();
 
-  Future<void> loginWithGoogle({
+  Future<UserModel> loginWithGoogle({
     required String credentials,
     required String clientId,
   }) async {
     try {
-      print(
-        "**********************************************************************2",
+      final response = await _dio.post(
+        "/login-with-google",
+        data: {'credentials': credentials, 'clientId': clientId},
       );
 
-      final response = await http.post(
-        Uri.parse("http://localhost:8000/api/v1/users/login-with-google"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"credentials": credentials, "clientId": clientId}),
+      final data =
+          response
+              .data; // assume full response is { user: { userData, accessToken, refreshToken } }
+      final userPayload = data['user'];
+
+      print(userPayload);
+
+      await TokenStorage.saveTokens(
+        userPayload['accessToken'],
+        userPayload['refreshToken'],
       );
 
-      if (response.statusCode == 200) {
-        print("Auth success: ${response.body}");
-      } else {
-        print("Auth failed");
-      }
-    } catch (error) {}
+      final user = UserModel.fromJson(userPayload['userData']);
+      await TokenStorage.saveUser(user);
+
+      return user;
+    } catch (error) {
+      print("error: ************************************");
+      throw Exception('Login failed: $error');
+    }
   }
 }

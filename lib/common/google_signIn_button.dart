@@ -1,3 +1,4 @@
+import 'package:chime/common/my_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +14,7 @@ class GoogleSignInButton extends StatelessWidget {
     return Column(
       children: [
         if (authVM.isLoading)
-          const CircularProgressIndicator() // Loading indicator while authenticating
+          const CircularProgressIndicator()
         else
           ElevatedButton.icon(
             icon: Image.asset('assets/images/google_logo.png', height: 24),
@@ -35,9 +36,35 @@ class GoogleSignInButton extends StatelessWidget {
                 side: const BorderSide(color: Colors.grey),
               ),
             ),
-            onPressed: () {
-              // Trigger sign-in method on ViewModel
-              authVM.signInWithGoogle();
+            onPressed: () async {
+              try {
+                bool isSuccess = await authVM.signInWithGoogle();
+                if (isSuccess) {
+                  if (context.mounted) {
+                    showMySnackBar(
+                      context: context,
+                      message: "Login successful",
+                    );
+                    // Navigate to home or dashboard if needed
+                    // Navigator.pushReplacementNamed(context, '/dashboard');
+                  }
+                } else {
+                  if (context.mounted) {
+                    showMySnackBar(
+                      context: context,
+                      message: "Login cancelled or failed",
+                    );
+                  }
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  showMySnackBar(
+                    context: context,
+                    message: "Something went wrong: ${e.toString()}",
+                    color: Colors.red,
+                  );
+                }
+              }
             },
           ),
       ],
