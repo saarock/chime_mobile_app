@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 // All the important statement ends
 
 //Main entry point of the Chime App
-
 void main() {
   runApp(ChangeNotifierProvider(create: (_) => AuthViewModel(), child: App()));
 }

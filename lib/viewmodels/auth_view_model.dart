@@ -4,9 +4,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ["email", 'https://www.googleapis.com/auth/contacts.readonly'],
+    scopes: ["email"],
     clientId:
-        "919257690124-2v6e0jgloudrerscm3vl2amqeek4koff.apps.googleusercontent.com",
+        "919257690124-g5spm7tfifrbpb69unkr6u69n5m8tus5.apps.googleusercontent.com",
   );
 
   bool _isLoading = false;
@@ -19,9 +19,7 @@ class AuthViewModel extends ChangeNotifier {
       notifyListeners();
 
       final GoogleSignInAccount? account = await _googleSignIn.signIn();
-      print(
-        "********************************************************************************* ${account?.email}",
-      );
+
       if (account == null) {
         _isLoading = false;
         notifyListeners();
@@ -32,7 +30,7 @@ class AuthViewModel extends ChangeNotifier {
       final String? credentials = auth.idToken;
       final String clientId =
           _googleSignIn.clientId ??
-          "919257690124-2v6e0jgloudrerscm3vl2amqeek4koff.apps.googleusercontent.com";
+          "919257690124-g5spm7tfifrbpb69unkr6u69n5m8tus5.apps.googleusercontent.com";
       if (credentials == null) {
         _isLoading = false;
         notifyListeners();
@@ -41,6 +39,8 @@ class AuthViewModel extends ChangeNotifier {
 
       // run the auth service to make hit the request in the backend
       AuthService authService = AuthService();
+      print(" this is the credentials: $credentials");
+      print("this is the client id: $clientId");
       await authService.loginWithGoogle(
         credentials: credentials,
         clientId: clientId,

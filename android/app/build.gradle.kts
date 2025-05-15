@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.chime"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
