@@ -1,4 +1,5 @@
 import 'package:chime/common/my_snackbar.dart';
+import 'package:chime/views/dashboard/dashboard_view.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -44,6 +45,11 @@ class GoogleSignInButton extends StatelessWidget {
                     showMySnackBar(
                       context: context,
                       message: "Login successful",
+                    );
+
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const DashboardView()),
                     );
                     // Navigate to home or dashboard if needed
                     // Navigator.pushReplacementNamed(context, '/dashboard');

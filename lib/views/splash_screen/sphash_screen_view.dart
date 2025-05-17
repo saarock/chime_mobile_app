@@ -1,3 +1,5 @@
+import 'package:chime/utils/token_storage.dart';
+import 'package:chime/views/dashboard/dashboard_view.dart';
 import 'package:chime/views/login_with_google/login_with_google_view.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,8 +20,17 @@ class _SphashScreenViewState extends State<SphashScreenView> {
 
   void checkLoginStatus() async {
     await Future.delayed(const Duration(seconds: 3));
-
+    final user = await TokenStorage.getUser();
     if (!mounted) return;
+
+    // if user is already login then simple redirect to the uer on on dashboard view
+    if (user != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardView()),
+      );
+      return;
+    }
 
     Navigator.pushReplacement(
       context,

@@ -12,28 +12,28 @@ class AuthService {
   }) async {
     try {
       final response = await _dio.post(
-        "/login-with-google",
+        "login-with-google",
         data: {'credentials': credentials, 'clientId': clientId},
       );
 
-      final data =
-          response
-              .data; // assume full response is { user: { userData, accessToken, refreshToken } }
-      final userPayload = data['user'];
+      final data = response.data;
 
-      print(userPayload);
+      final userPayload = data['data'];
+
+      if (userPayload == null) {
+        throw new Exception("Login failed");
+      }
 
       await TokenStorage.saveTokens(
         userPayload['accessToken'],
         userPayload['refreshToken'],
       );
-
       final user = UserModel.fromJson(userPayload['userData']);
+
       await TokenStorage.saveUser(user);
 
       return user;
     } catch (error) {
-      print("error: ************************************");
       throw Exception('Login failed: $error');
     }
   }

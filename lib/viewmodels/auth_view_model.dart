@@ -24,7 +24,9 @@ class AuthViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
+      print("strted loginWith google");
       final GoogleSignInAccount? account = await _googleSignIn.signIn();
+
       if (account == null) {
         return false; // User canceled the sign-in
       }
@@ -37,18 +39,20 @@ class AuthViewModel extends ChangeNotifier {
       }
 
       final AuthService authService = AuthService();
+
       final UserModel user = await authService.loginWithGoogle(
         credentials: idToken,
         clientId: kGoogleServerClientId,
       );
 
+      print('Logged in user: $user');
       _user = user;
       await TokenStorage.saveUser(user); // Also store user locally
       return true;
     } catch (e) {
       _isLoading = false;
       notifyListeners();
-      debugPrint('Google Sign-In error: $e');
+      print('Google Sign-In error**************: $e');
       return false;
     } finally {
       _isLoading = false;
