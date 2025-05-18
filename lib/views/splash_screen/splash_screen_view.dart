@@ -1,17 +1,17 @@
 import 'package:chime/utils/token_storage.dart';
 import 'package:chime/views/dashboard/dashboard_view.dart';
-import 'package:chime/views/login_with_google/login_with_google_view.dart';
+import 'package:chime/views/login/login_view.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class SphashScreenView extends StatefulWidget {
-  const SphashScreenView({super.key});
+class SplashScreenView extends StatefulWidget {
+  const SplashScreenView({super.key});
 
   @override
-  State<SphashScreenView> createState() => _SphashScreenViewState();
+  State<SplashScreenView> createState() => _SplashScreenViewState();
 }
 
-class _SphashScreenViewState extends State<SphashScreenView> {
+class _SplashScreenViewState extends State<SplashScreenView> {
   @override
   void initState() {
     super.initState();
@@ -34,7 +34,7 @@ class _SphashScreenViewState extends State<SphashScreenView> {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => LoginWithGoogleView()),
+      MaterialPageRoute(builder: (context) => LoginView()),
     );
   }
 

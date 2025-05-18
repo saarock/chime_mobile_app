@@ -1,6 +1,6 @@
 import 'package:chime/common/custom_app.dart';
 import 'package:chime/utils/token_storage.dart';
-import 'package:chime/views/login_with_google/login_with_google_view.dart';
+import 'package:chime/views/login/login_view.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -22,7 +22,7 @@ class _DashboardViewState extends State<DashboardView> {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => LoginWithGoogleView()),
+      MaterialPageRoute(builder: (context) => LoginView()),
     );
   }
 
