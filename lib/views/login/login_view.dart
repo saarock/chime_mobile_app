@@ -55,7 +55,7 @@ class LoginView extends StatelessWidget {
                   onTap: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => LoginView()),
+                      MaterialPageRoute(builder: (context) => RegisterView()),
                     );
                   },
                   child: RichText(
