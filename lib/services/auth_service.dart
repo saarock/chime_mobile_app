@@ -21,7 +21,7 @@ class AuthService {
       final userPayload = data['data'];
 
       if (userPayload == null) {
-        throw new Exception("Login failed");
+        throw Exception("Login failed");
       }
 
       await TokenStorage.saveTokens(
