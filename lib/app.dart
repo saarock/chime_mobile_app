@@ -1,3 +1,4 @@
+import 'package:chime/views/splash_screen/splash_screen_view.dart';
 import 'package:flutter/material.dart';
 
 class App extends StatelessWidget {
@@ -5,6 +6,9 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: const SplashScreenView(),
+    );
   }
 }
