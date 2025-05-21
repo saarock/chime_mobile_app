@@ -52,7 +52,6 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       _isLoading = false;
       notifyListeners();
-      print('Google Sign-In error**************: $e');
       return false;
     } finally {
       _isLoading = false;
