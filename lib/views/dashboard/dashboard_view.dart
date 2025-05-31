@@ -1,5 +1,4 @@
 import 'package:chime/common/custom_navigation_bar.dart';
-import 'package:chime/models/user_model.dart';
 import 'package:chime/views/chat/chat_view.dart';
 import 'package:chime/views/profile/profile_view.dart';
 import 'package:chime/views/video_call/video_call.dart';

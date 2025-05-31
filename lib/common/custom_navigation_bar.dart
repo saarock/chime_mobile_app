@@ -30,37 +30,55 @@ class CustomNavigationBar extends StatelessWidget {
           ),
         ],
       ),
-      child: NavigationBar(
-        height: 70,
-        backgroundColor: Colors.transparent,
-        indicatorColor: selectedColor.withOpacity(0.15),
-        elevation: 0,
-        selectedIndex: selectedIndex,
-        onDestinationSelected: onDestinationSelected,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: [
-          NavigationDestination(
-            icon: Icon(
-              Icons.chat,
-              color: selectedIndex == 0 ? selectedColor : unselectedColor,
+      child: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          labelTextStyle: MaterialStateProperty.resolveWith<TextStyle>((
+            states,
+          ) {
+            if (states.contains(MaterialState.selected)) {
+              return const TextStyle(
+                color: selectedColor,
+                fontWeight: FontWeight.bold,
+              );
+            }
+            return const TextStyle(
+              color: unselectedColor,
+              fontWeight: FontWeight.normal,
+            );
+          }),
+        ),
+        child: NavigationBar(
+          height: 70,
+          backgroundColor: Colors.transparent,
+          indicatorColor: selectedColor.withOpacity(0.15),
+          elevation: 0,
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onDestinationSelected,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: [
+            NavigationDestination(
+              icon: Icon(
+                Icons.chat,
+                color: selectedIndex == 0 ? selectedColor : unselectedColor,
+              ),
+              label: "Chat",
             ),
-            label: "Chat",
-          ),
-          NavigationDestination(
-            icon: Icon(
-              Icons.video_call,
-              color: selectedIndex == 1 ? selectedColor : unselectedColor,
+            NavigationDestination(
+              icon: Icon(
+                Icons.video_call,
+                color: selectedIndex == 1 ? selectedColor : unselectedColor,
+              ),
+              label: "Video Call",
             ),
-            label: "Video Call",
-          ),
-          NavigationDestination(
-            icon: Icon(
-              Icons.person,
-              color: selectedIndex == 2 ? selectedColor : unselectedColor,
+            NavigationDestination(
+              icon: Icon(
+                Icons.person,
+                color: selectedIndex == 2 ? selectedColor : unselectedColor,
+              ),
+              label: "Profile",
             ),
-            label: "Profile",
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
