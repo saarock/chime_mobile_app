@@ -2,14 +2,14 @@ class UserModel {
   final String id;
   final String fullName;
   final String email;
-  final String profilePic;
+  final String profilePicture;
   final bool active;
 
   UserModel({
     required this.id,
     required this.fullName,
     required this.email,
-    required this.profilePic,
+    required this.profilePicture,
     required this.active,
   });
 
@@ -18,7 +18,7 @@ class UserModel {
       id: json['_id'],
       fullName: json['fullName'],
       email: json['email'],
-      profilePic: json['profilePicture'] ?? '',
+      profilePicture: json['profilePicture'] ?? '',
       active: json['active'],
     );
   }
@@ -28,7 +28,7 @@ class UserModel {
       '_id': id,
       'fullName': fullName,
       'email': email,
-      'profilePic': profilePic,
+      'profilePicture': profilePicture,
       'active': active,
     };
   }

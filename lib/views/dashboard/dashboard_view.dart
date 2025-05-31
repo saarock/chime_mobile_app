@@ -1,6 +1,7 @@
-import 'package:chime/common/custom_app.dart';
-import 'package:chime/utils/token_storage.dart';
-import 'package:chime/views/login/login_view.dart';
+import 'package:chime/common/custom_navigation_bar.dart';
+import 'package:chime/views/chat/chat_view.dart';
+import 'package:chime/views/profile/profile_view.dart';
+import 'package:chime/views/video_call/video_call.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -14,24 +15,23 @@ class DashboardView extends StatefulWidget {
 class _DashboardViewState extends State<DashboardView> {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  Future<void> logout() async {
-    await _googleSignIn.signOut();
-    await TokenStorage.clear();
+  int _selectedIndex = 0;
 
-    if (!mounted) return;
+  final List<Widget> _pages = [ChatView(), VideoCall(), ProfileView()];
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LoginView()),
-    );
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: "DashBoard"),
-      body: Container(
-        child: ElevatedButton(onPressed: logout, child: Text("logout")),
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: CustomNavigationBar(
+        onDestinationSelected: _onItemTapped,
+        selectedIndex: _selectedIndex,
       ),
     );
   }

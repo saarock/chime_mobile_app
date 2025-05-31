@@ -25,6 +25,8 @@ class _SplashScreenViewState extends State<SplashScreenView> {
 
     // if user is already login then simple redirect to the uer on on dashboard view
     if (user != null) {
+      print("gsdngkjsdfnghjskldfhskjdfnhsdfhsdfhsdfhsdfhsdfh");
+      print(user.toJson());
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const DashboardView()),
