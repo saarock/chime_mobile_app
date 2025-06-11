@@ -1,6 +1,6 @@
-import 'package:chime/common/custom_app.dart';
-import 'package:chime/common/google_signIn_button.dart';
-import 'package:chime/views/login/login_view.dart';
+import 'package:chime/core/common/custom_app.dart';
+import 'package:chime/core/common/google_signIn_button.dart';
+import 'package:chime/features/auth/presentation/view/login_view.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 

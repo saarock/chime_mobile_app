@@ -1,7 +1,9 @@
-import 'package:chime/common/custom_app.dart';
-import 'package:chime/common/google_signIn_button.dart';
-import 'package:chime/views/register/register_view.dart';
+import 'package:chime/core/common/custom_app.dart';
+import 'package:chime/core/common/google_signIn_button.dart';
+import 'package:chime/features/auth/presentation/view_model/login_view_model/login_event.dart';
+import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class LoginView extends StatelessWidget {
@@ -53,9 +55,8 @@ class LoginView extends StatelessWidget {
                 // Clickable "Don't have account? Register"
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => RegisterView()),
+                    context.read<LoginViewModel>().add(
+                      NavigateToRegisterViewEvent(context: context),
                     );
                   },
                   child: RichText(
