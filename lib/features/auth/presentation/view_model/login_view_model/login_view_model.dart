@@ -1,14 +1,21 @@
 import 'package:chime/app/service_locator/service_locator.dart';
+import 'package:chime/features/auth/domain/use_case/user_login_with_google_usecase.dart';
 import 'package:chime/features/auth/presentation/view/register_view.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_event.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_state.dart';
 import 'package:chime/features/auth/presentation/view_model/register_view_model/regsiter_view_model.dart';
+import 'package:chime/features/home/presentation/view/home_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoginViewModel extends Bloc<LoginEvent, LoginState> {
-  LoginViewModel() : super(LoginState.initial()) {
+  final UserLoginWithGoogleUsecase _userLoginWithGoogleUsecase;
+
+  LoginViewModel(this._userLoginWithGoogleUsecase)
+    : super(LoginState.initial()) {
     on<NavigateToRegisterViewEvent>(_onNavigateToRegisterView);
+    on<LoginWithGoogle>(_loginWithGoogle);
+    on<NavigateToHomeEvent>(_onNavigateToHomeView);
   }
 
   // ============ Navigate to  the register page =============== //
@@ -29,6 +36,43 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
                 ],
                 child: RegisterView(),
               ),
+        ),
+      );
+    }
+  }
+
+  // Login with google
+  void _loginWithGoogle(LoginWithGoogle event, Emitter<LoginState> emit) async {
+    emit(state.copyWith(isLoading: true, isSuccess: false));
+
+    final result = await _userLoginWithGoogleUsecase(
+      LoginParams(clientId: event.clientId, credential: event.credential),
+    );
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(isLoading: false, isSuccess: false));
+      },
+      (userData) {
+        print(userData);
+        emit(state.copyWith(isLoading: false, isSuccess: true));
+        add(NavigateToHomeEvent(context: event.context));
+      },
+    );
+  }
+
+  // Navigate to home
+  void _onNavigateToHomeView(
+    NavigateToHomeEvent event,
+    Emitter<LoginState> emit,
+  ) {
+    if (event.context.mounted) {
+      Navigator.pushReplacement(
+        event.context,
+        MaterialPageRoute(
+          builder:
+              (context) =>
+                  const HomeView(), // Replace with your actual home widget
         ),
       );
     }

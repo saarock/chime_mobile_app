@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// Cutome theme
 MaterialColor customColor = MaterialColor(0xFF1C1A58, <int, Color>{
   50: Color(0xFFE0E0F7),
   100: Color(0xFFB3B3E0),

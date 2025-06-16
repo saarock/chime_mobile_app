@@ -1,11 +1,63 @@
 import 'package:chime/core/common/custom_app.dart';
 import 'package:chime/core/common/google_signIn_button.dart';
 import 'package:chime/features/auth/presentation/view/login_view.dart';
+import 'package:chime/features/auth/presentation/view_model/login_view_model/login_event.dart';
+import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import 'package:google_sign_in/google_sign_in.dart';
+
+// ...your other imports...
 
 class RegisterView extends StatelessWidget {
   const RegisterView({super.key});
+
+  Future<void> _handleGoogleSignIn(BuildContext context) async {
+    final googleSignIn = GoogleSignIn(
+      scopes: [
+        'email',
+        // add other scopes if needed
+      ],
+    );
+
+    try {
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        // User canceled sign-in
+        return;
+      }
+
+      final authentication = await account.authentication;
+
+      final idToken = authentication.idToken; // The credential you want
+
+      if (idToken != null) {
+        // Dispatch event with idToken as credential
+        // ignore: use_build_context_synchronously
+        context.read<LoginViewModel>().add(
+          LoginWithGoogle(
+            // ignore: use_build_context_synchronously
+            context: context,
+            clientId:
+                "919257690124-g5spm7tfifrbpb69unkr6u69n5m8tus5.apps.googleusercontent.com",
+            credential: idToken,
+          ),
+        );
+      } else {
+        // Handle error: token not found
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to retrieve Google ID token')),
+        );
+      }
+    } catch (e) {
+      // Handle sign-in errors here
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google Sign-In failed: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,14 +100,19 @@ class RegisterView extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
-                const GoogleSignInButton(),
+
+                GoogleSignInButton(
+                  onPressed: () => _handleGoogleSignIn(context),
+                ),
+
                 const SizedBox(height: 40),
-                // Clickable "Don't have account? Register"
                 GestureDetector(
                   onTap: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => LoginView()),
+                      MaterialPageRoute(
+                        builder: (context) => const LoginView(),
+                      ),
                     );
                   },
                   child: RichText(
@@ -79,7 +136,6 @@ class RegisterView extends StatelessWidget {
                     ),
                   ),
                 ),
-                // ...existing code...
               ],
             ),
           ),

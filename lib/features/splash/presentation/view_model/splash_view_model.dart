@@ -13,7 +13,6 @@ class SplashViewModel extends Cubit<void> {
       // Open Login page or Onboarding Screen
 
       if (context.mounted) {
-        print("**********************************");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

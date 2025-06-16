@@ -32,10 +32,8 @@ class CustomNavigationBar extends StatelessWidget {
       ),
       child: NavigationBarTheme(
         data: NavigationBarThemeData(
-          labelTextStyle: MaterialStateProperty.resolveWith<TextStyle>((
-            states,
-          ) {
-            if (states.contains(MaterialState.selected)) {
+          labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>((states) {
+            if (states.contains(WidgetState.selected)) {
               return const TextStyle(
                 color: selectedColor,
                 fontWeight: FontWeight.bold,
