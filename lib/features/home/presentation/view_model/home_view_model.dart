@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeViewModel extends Cubit<HomeState> {
-  HomeViewModel({required this.loginViewModel}) : super(HomeState.initial());
-
   final LoginViewModel loginViewModel;
+
+  HomeViewModel({required this.loginViewModel})
+    : super(HomeState.initial(loginViewModel));
 
   void onTabTapped(int index) {
     emit(state.copyWith(selectedIndex: index));

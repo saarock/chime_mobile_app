@@ -1,7 +1,7 @@
-import 'package:chime/features/auth/presentation/view_model/login_view_model/login_state.dart';
-import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
+import 'package:chime/features/auth/presentation/view_model/login_view_model/login_state.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
@@ -21,7 +21,6 @@ class ProfileView extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Profile Picture
                 CircleAvatar(
                   radius: 50,
                   backgroundImage:
@@ -34,8 +33,6 @@ class ProfileView extends StatelessWidget {
                           : null,
                 ),
                 const SizedBox(height: 16),
-
-                // Name & Email
                 Text(
                   user.fullName,
                   style: const TextStyle(
@@ -48,10 +45,7 @@ class ProfileView extends StatelessWidget {
                   user.email,
                   style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
                 ),
-
                 const SizedBox(height: 24),
-
-                // Info Cards
                 _infoCard("Username", user.userName ?? "-"),
                 _infoCard("Country", user.country ?? "-"),
                 _infoCard("Gender", user.gender?.name ?? "-"),

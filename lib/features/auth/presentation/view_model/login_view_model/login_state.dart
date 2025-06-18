@@ -30,5 +30,5 @@ class LoginState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [isLoading, isSuccess];
+  List<Object?> get props => [isLoading, isSuccess, userApiModel];
 }
