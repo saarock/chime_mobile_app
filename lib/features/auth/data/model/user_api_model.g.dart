@@ -13,7 +13,7 @@ UserApiModel _$UserApiModelFromJson(Map<String, dynamic> json) => UserApiModel(
   email: json['email'] as String,
   phoneNumber: json['phoneNumber'] as String?,
   profilePicture: json['profilePicture'] as String?,
-  age: json['age'] as String?,
+  age: const StringOrIntToIntConverter().fromJson(json['age']),
   gender: $enumDecodeNullable(_$GenderEnumMap, json['gender']),
   relationShipStatus: $enumDecodeNullable(
     _$RelationshipStatusEnumMap,
@@ -22,7 +22,7 @@ UserApiModel _$UserApiModelFromJson(Map<String, dynamic> json) => UserApiModel(
   active: json['active'] as bool,
   country: json['country'] as String?,
   role: json['role'] as String,
-  v: (json['v'] as num).toInt(),
+  v: const StringOrIntToIntConverter().fromJson(json['v']),
   createdAt: json['createdAt'] as String,
   updatedAt: json['updatedAt'] as String,
 );
@@ -35,14 +35,14 @@ Map<String, dynamic> _$UserApiModelToJson(UserApiModel instance) =>
       'email': instance.email,
       'phoneNumber': instance.phoneNumber,
       'profilePicture': instance.profilePicture,
-      'age': instance.age,
+      'age': const StringOrIntToIntConverter().toJson(instance.age),
       'gender': _$GenderEnumMap[instance.gender],
       'relationShipStatus':
           _$RelationshipStatusEnumMap[instance.relationShipStatus],
       'active': instance.active,
       'country': instance.country,
       'role': instance.role,
-      'v': instance.v,
+      'v': const StringOrIntToIntConverter().toJson(instance.v),
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
     };

@@ -1,12 +1,14 @@
-// import 'package:chime/features/auth/data/data_source/user_data_source.dart';
-// import 'package:chime/features/auth/domain/entity/user_google_entity.dart';
+import 'package:chime/core/network/hive_service.dart';
+import 'package:chime/features/auth/data/model/user_api_model.dart';
 
-// class UserLocalDatasource implements IUserDataSource {
-//   //   final HiveServi _hiveService;
-
-//   // StudentLocalDatasource({required HiveService hiveService})
-//   //   : _hiveService = hiveService;
-
-//   @override
-//   Future<String> loginUser(GoogleLoginCredential credentials) {}
-// }
+class UserLocalDatasource {
+  Future<void> cacheUser(UserApiModel user) async {
+    await HiveService().cacheUser({
+      'id': user.id,
+      'fullName': user.fullName,
+      'email': user.email,
+      'profileImage': user.profilePicture ?? '',
+      'userName': user.userName ?? '',
+    });
+  }
+}

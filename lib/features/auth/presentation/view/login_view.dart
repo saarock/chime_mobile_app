@@ -64,7 +64,7 @@ class LoginView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: CustomAppBar(title: "Register"),
+      appBar: CustomAppBar(title: "Continue with google"),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Container(

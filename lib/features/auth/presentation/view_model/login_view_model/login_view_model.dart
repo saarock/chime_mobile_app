@@ -1,4 +1,5 @@
 import 'package:chime/app/service_locator/service_locator.dart';
+import 'package:chime/features/auth/data/data_source/local_datasource/user_local_datasource.dart';
 import 'package:chime/features/auth/domain/use_case/user_login_with_google_usecase.dart';
 import 'package:chime/features/auth/presentation/view/register_view.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_event.dart';
@@ -49,14 +50,21 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
       LoginParams(clientId: event.clientId, credential: event.credential),
     );
 
-    result.fold(
+    await result.fold(
       (failure) {
         emit(state.copyWith(isLoading: false, isSuccess: false));
       },
-      (userData) {
+      (userData) async {
+        print("hahahhahahahahahhahahahaha");
         print(userData);
+
+        await UserLocalDatasource().cacheUser(userData);
         emit(state.copyWith(isLoading: false, isSuccess: true));
-        add(NavigateToHomeEvent(context: event.context));
+        // ignore: use_build_context_synchronously
+        // Only add another event if the bloc is still active
+        if (!emit.isDone) {
+          add(NavigateToHomeEvent(context: event.context));
+        }
       },
     );
   }

@@ -92,7 +92,7 @@ class RegisterView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  "Sign up to continue",
+                  "Register with google",
                   style: GoogleFonts.poppins(
                     color: Colors.grey[700],
                     fontSize: 16,

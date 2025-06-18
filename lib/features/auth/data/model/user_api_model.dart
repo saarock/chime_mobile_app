@@ -17,7 +17,10 @@ class UserApiModel extends Equatable {
   final String email;
   final String? phoneNumber;
   final String? profilePicture;
-  final String? age;
+
+  @StringOrIntToIntConverter()
+  final int? age;
+
   final Gender? gender;
 
   @JsonKey(name: 'relationShipStatus')
@@ -27,7 +30,9 @@ class UserApiModel extends Equatable {
   final String? country;
   final String role;
 
-  final int v;
+  @StringOrIntToIntConverter()
+  final int? v;
+
   final String createdAt;
   final String updatedAt;
 
@@ -72,4 +77,20 @@ class UserApiModel extends Equatable {
     createdAt,
     updatedAt,
   ];
+}
+
+/// Handles cases where backend sends either a string or an int for numeric fields
+class StringOrIntToIntConverter implements JsonConverter<int?, dynamic> {
+  const StringOrIntToIntConverter();
+
+  @override
+  int? fromJson(dynamic json) {
+    if (json == null) return null;
+    if (json is int) return json;
+    if (json is String) return int.tryParse(json);
+    return null;
+  }
+
+  @override
+  dynamic toJson(int? object) => object;
 }

@@ -1,5 +1,6 @@
 import 'package:chime/core/error/failure.dart';
 import 'package:chime/features/auth/data/data_source/remote_datasource/user_remote_datasource.dart';
+import 'package:chime/features/auth/data/model/user_api_model.dart';
 import 'package:chime/features/auth/domain/entity/user_google_entity.dart';
 import 'package:chime/features/auth/domain/repository/student_repository.dart';
 import 'package:dartz/dartz.dart';
@@ -11,7 +12,7 @@ class UserRemoteRepository implements IUserRepository {
     : _userRemoteDatasource = userRemoteDatasource;
 
   @override
-  Future<Either<Failure, String>> loginUserWithGoogle(
+  Future<Either<Failure, UserApiModel>> loginUserWithGoogle(
     String credential,
     String clientId,
   ) async {

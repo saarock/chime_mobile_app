@@ -1,5 +1,6 @@
 import 'package:chime/app/use_case/usercase.dart';
 import 'package:chime/core/error/failure.dart';
+import 'package:chime/features/auth/data/model/user_api_model.dart';
 import 'package:chime/features/auth/domain/repository/student_repository.dart';
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
@@ -18,14 +19,14 @@ class LoginParams extends Equatable {
 }
 
 class UserLoginWithGoogleUsecase
-    implements UserCaseWithParams<String, LoginParams> {
+    implements UserCaseWithParams<UserApiModel, LoginParams> {
   final IUserRepository _userRepository;
 
   UserLoginWithGoogleUsecase({required IUserRepository userRepository})
     : _userRepository = userRepository;
 
   @override
-  Future<Either<Failure, String>> call(LoginParams param) async {
+  Future<Either<Failure, UserApiModel>> call(LoginParams param) async {
     return await _userRepository.loginUserWithGoogle(
       param.credential,
       param.clientId,

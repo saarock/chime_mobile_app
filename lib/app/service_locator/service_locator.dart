@@ -1,4 +1,5 @@
 import 'package:chime/core/network/api_service.dart';
+import 'package:chime/core/network/hive_service.dart';
 import 'package:chime/features/auth/data/data_source/remote_datasource/user_remote_datasource.dart';
 import 'package:chime/features/auth/data/repository/remote_repository/user_remote_repository.dart';
 import 'package:chime/features/auth/domain/use_case/user_login_with_google_usecase.dart';
@@ -16,6 +17,15 @@ Future initDependencies() async {
   await _initSplashModule();
   await _initLoginModule();
   await _initAuthModule();
+  await _initLocalStorageModule();
+}
+
+Future<void> _initLocalStorageModule() async {
+  final hiveService = HiveService();
+  await hiveService.init();
+
+  // Register HiveService as a singleton
+  serviceLocator.registerSingleton<HiveService>(hiveService);
 }
 
 // Api module init
