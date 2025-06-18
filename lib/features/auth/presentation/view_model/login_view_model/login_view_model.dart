@@ -6,6 +6,7 @@ import 'package:chime/features/auth/presentation/view_model/login_view_model/log
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_state.dart';
 import 'package:chime/features/auth/presentation/view_model/register_view_model/regsiter_view_model.dart';
 import 'package:chime/features/home/presentation/view/home_view.dart';
+import 'package:chime/features/home/presentation/view_model/home_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -55,11 +56,14 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
         emit(state.copyWith(isLoading: false, isSuccess: false));
       },
       (userData) async {
-        print("hahahhahahahahahhahahahaha");
-        print(userData);
-
         await UserLocalDatasource().cacheUser(userData);
-        emit(state.copyWith(isLoading: false, isSuccess: true));
+        emit(
+          state.copyWith(
+            isLoading: false,
+            isSuccess: true,
+            userApiModel: userData,
+          ),
+        );
         // ignore: use_build_context_synchronously
         // Only add another event if the bloc is still active
         if (!emit.isDone) {
@@ -79,8 +83,10 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
         event.context,
         MaterialPageRoute(
           builder:
-              (context) =>
-                  const HomeView(), // Replace with your actual home widget
+              (context) => BlocProvider<HomeViewModel>(
+                create: (context) => HomeViewModel(loginViewModel: this),
+                child: const HomeView(),
+              ),
         ),
       );
     }

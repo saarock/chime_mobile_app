@@ -1,0 +1,36 @@
+import 'package:chime/app/service_locator/service_locator.dart';
+import 'package:chime/features/home/presentation/view/bottom_view/dashboard_view.dart';
+import 'package:chime/features/profile/presentation/view/profile_view.dart';
+import 'package:chime/features/video-call/presentation/view/video_call_view.dart';
+import 'package:chime/features/video-call/presentation/view_model/video_view_model.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+class HomeState {
+  final int selectedIndex;
+  final List<Widget> views;
+
+  const HomeState({required this.selectedIndex, required this.views});
+
+  /// Initial state
+  static HomeState initial() {
+    return HomeState(
+      selectedIndex: 0,
+      views: [
+        BlocProvider.value(
+          value: serviceLocator<VideoCubit>(),
+          child: VideoCallView(),
+        ),
+        ProfileView(),
+      ],
+    );
+  }
+
+  /// Copy with updated values
+  HomeState copyWith({int? selectedIndex, List<Widget>? views}) {
+    return HomeState(
+      selectedIndex: selectedIndex ?? this.selectedIndex,
+      views: views ?? this.views,
+    );
+  }
+}

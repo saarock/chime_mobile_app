@@ -5,68 +5,79 @@ import 'package:chime/features/auth/data/repository/remote_repository/user_remot
 import 'package:chime/features/auth/domain/use_case/user_login_with_google_usecase.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
 import 'package:chime/features/auth/presentation/view_model/register_view_model/regsiter_view_model.dart';
+import 'package:chime/features/home/presentation/view_model/home_view_model.dart';
 import 'package:chime/features/splash/presentation/view_model/splash_view_model.dart';
+import 'package:chime/features/video-call/presentation/view_model/video_view_model.dart';
+
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 
 final serviceLocator = GetIt.instance;
 
 // ==================== Init dependencies ====================== //
-Future initDependencies() async {
+Future<void> initDependencies() async {
   await _initApiModule();
   await _initSplashModule();
-  await _initLoginModule();
-  await _initAuthModule();
+  await _initAuthModule(); // Login & Register both here
   await _initLocalStorageModule();
+  await _initVideoModule(); // Register VideoCubit here
+  await _initHomeModule();
 }
 
+// Home
+Future<void> _initHomeModule() async {
+  serviceLocator.registerFactory(
+    () => HomeViewModel(loginViewModel: serviceLocator<LoginViewModel>()),
+  );
+}
+
+// Video (register your VideoCubit here)
+Future<void> _initVideoModule() async {
+  serviceLocator.registerFactory(() => VideoCubit());
+}
+
+// ========== Local Storage Module ==========
 Future<void> _initLocalStorageModule() async {
   final hiveService = HiveService();
   await hiveService.init();
-
-  // Register HiveService as a singleton
   serviceLocator.registerSingleton<HiveService>(hiveService);
 }
 
-// Api module init
+// ========== API Module ==========
 Future<void> _initApiModule() async {
-  // Dio instance
   serviceLocator.registerLazySingleton<Dio>(() => Dio());
   serviceLocator.registerLazySingleton(() => ApiService(serviceLocator<Dio>()));
 }
 
-// =============== Splash module init method ==================== //
+// ========== Splash ViewModel ==========
 Future<void> _initSplashModule() async {
   serviceLocator.registerFactory(() => SplashViewModel());
 }
 
-// ============== login module init method =============== //
-Future<void> _initLoginModule() async {
-  serviceLocator.registerFactory(
-    () => LoginViewModel(serviceLocator<UserLoginWithGoogleUsecase>()),
-  );
-}
-
-// ============== register module init method =============== //
+// ========== Auth Module: Login + Register ==========
 Future<void> _initAuthModule() async {
-  // Register data source
+  // Data Source
   serviceLocator.registerFactory(
     () => UserRemoteDatasource(apiService: serviceLocator<ApiService>()),
   );
 
-  //  Register repo
+  // Repository
   serviceLocator.registerFactory(
     () => UserRemoteRepository(
       userRemoteDatasource: serviceLocator<UserRemoteDatasource>(),
     ),
   );
 
-  // Regsiter user case
+  // Use Case
   serviceLocator.registerFactory(
     () => UserLoginWithGoogleUsecase(
       userRepository: serviceLocator<UserRemoteRepository>(),
     ),
   );
 
+  // ViewModels
+  serviceLocator.registerFactory(
+    () => LoginViewModel(serviceLocator<UserLoginWithGoogleUsecase>()),
+  );
   serviceLocator.registerFactory(() => RegsiterViewModel());
 }
