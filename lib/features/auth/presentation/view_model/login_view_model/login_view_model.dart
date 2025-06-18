@@ -7,6 +7,7 @@ import 'package:chime/features/auth/presentation/view_model/login_view_model/log
 import 'package:chime/features/auth/presentation/view_model/register_view_model/regsiter_view_model.dart';
 import 'package:chime/features/home/presentation/view/home_view.dart';
 import 'package:chime/features/home/presentation/view_model/home_view_model.dart';
+import 'package:chime/features/video-call/presentation/view_model/video_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

@@ -22,6 +22,7 @@ Future<void> initDependencies() async {
   await _initLocalStorageModule();
   await _initVideoModule(); // Register VideoCubit here
   await _initHomeModule();
+  await _initProfileModule();
 }
 
 // Home
@@ -30,6 +31,9 @@ Future<void> _initHomeModule() async {
     () => HomeViewModel(loginViewModel: serviceLocator<LoginViewModel>()),
   );
 }
+
+// Profile
+Future<void> _initProfileModule() async {}
 
 // Video (register your VideoCubit here)
 Future<void> _initVideoModule() async {
