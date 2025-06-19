@@ -35,4 +35,10 @@ class UserRemoteDatasource implements IUserDataSource {
       throw Exception("Failed to login student: $error");
     }
   }
+
+  @override
+  Future<UserApiModel> verifyUser() async {
+    final response = await _apiService.dio.get('/auth/verify');
+    return UserApiModel.fromJson(response.data);
+  }
 }

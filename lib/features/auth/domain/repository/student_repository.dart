@@ -7,4 +7,5 @@ abstract interface class IUserRepository {
     String credential,
     String clientId,
   );
+  Future<Either<Failure, UserApiModel>> verifyUser();
 }

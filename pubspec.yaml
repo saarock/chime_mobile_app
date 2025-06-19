@@ -57,6 +57,8 @@ dependencies:
   path_provider: ^2.1.5
   convert: ^3.1.2
   converter: ^0.4.0
+  cookie_jar: ^4.0.8
+  dio_cookie_manager: ^3.2.0
 
 dev_dependencies:
   flutter_test:

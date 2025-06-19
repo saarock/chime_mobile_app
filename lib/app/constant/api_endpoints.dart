@@ -14,6 +14,8 @@ class ApiEndpoints {
   static const String baseUrl = "$serverAddress/api/v1/users";
   static const String imageUrl = "$serverAddress/uploads/";
 
+  static const String verifyUser = "$serverAddress/api/v1/verify-user";
+
   // Auth
   static const String login = "/login-with-google";
   static const String register = "auth/register";
