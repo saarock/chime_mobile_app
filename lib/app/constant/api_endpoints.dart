@@ -15,6 +15,6 @@ class ApiEndpoints {
 
   static const String verifyUser = "$serverAddress/api/v1/users/verify-user";
 
-  // Auth
+  // Auth url
   static const String login = "/login-with-google";
 }
