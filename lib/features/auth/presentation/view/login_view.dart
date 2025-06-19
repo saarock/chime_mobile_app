@@ -32,8 +32,10 @@ class LoginView extends StatelessWidget {
 
       if (idToken != null) {
         // Dispatch event with idToken as credential
+        // ignore: use_build_context_synchronously
         context.read<LoginViewModel>().add(
           LoginWithGoogle(
+            // ignore: use_build_context_synchronously
             context: context,
             clientId:
                 "919257690124-g5spm7tfifrbpb69unkr6u69n5m8tus5.apps.googleusercontent.com",
@@ -41,12 +43,14 @@ class LoginView extends StatelessWidget {
           ),
         );
       } else {
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to retrieve Google ID token')),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(
+        // ignore: use_build_context_synchronously
         context,
       ).showSnackBar(SnackBar(content: Text('Google Sign-In failed: $e')));
     }

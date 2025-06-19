@@ -12,9 +12,6 @@ import 'package:chime/features/splash/presentation/view_model/splash_view_model.
 import 'package:chime/features/video-call/presentation/view_model/video_view_model.dart';
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-
 
 final serviceLocator = GetIt.instance;
 
