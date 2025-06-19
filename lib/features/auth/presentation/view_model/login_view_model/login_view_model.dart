@@ -77,12 +77,13 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
   }
 
   // Navigate to home
+  // Navigate to home
   void _onNavigateToHomeView(
     NavigateToHomeEvent event,
     Emitter<LoginState> emit,
   ) {
     if (event.context.mounted) {
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         event.context,
         MaterialPageRoute(
           builder:
@@ -91,6 +92,7 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
                 child: const HomeView(),
               ),
         ),
+        (route) => false, // This removes all previous routes
       );
     }
   }

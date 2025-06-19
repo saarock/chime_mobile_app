@@ -72,10 +72,7 @@ class ProfileView extends StatelessWidget {
                   _glassInfoCard("Country", user.country ?? "-"),
                   _glassInfoCard("Gender", user.gender?.name ?? "-"),
                   _glassInfoCard("Age", user.age?.toString() ?? "-"),
-                  _glassInfoCard(
-                    "Status",
-                    user.relationShipStatus?.name ?? "-",
-                  ),
+                  _glassInfoCard("Status", user.relationShipStatus ?? "-"),
                   _glassInfoCard("Role", user.role),
                   _glassInfoCard("Active", user.active ? "Yes" : "No"),
                 ],

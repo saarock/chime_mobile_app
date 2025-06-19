@@ -9,8 +9,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
 
-// ...your other imports...
-
 class LoginView extends StatelessWidget {
   const LoginView({super.key});
 
@@ -34,10 +32,8 @@ class LoginView extends StatelessWidget {
 
       if (idToken != null) {
         // Dispatch event with idToken as credential
-        // ignore: use_build_context_synchronously
         context.read<LoginViewModel>().add(
           LoginWithGoogle(
-            // ignore: use_build_context_synchronously
             context: context,
             clientId:
                 "919257690124-g5spm7tfifrbpb69unkr6u69n5m8tus5.apps.googleusercontent.com",
@@ -45,13 +41,11 @@ class LoginView extends StatelessWidget {
           ),
         );
       } else {
-        // Handle error: token not found
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to retrieve Google ID token')),
         );
       }
     } catch (e) {
-      // Handle sign-in errors here
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Google Sign-In failed: $e')));
@@ -64,7 +58,7 @@ class LoginView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: CustomAppBar(title: "Continue with google"),
+      appBar: CustomAppBar(title: "Continue with Google"),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Container(
@@ -81,7 +75,7 @@ class LoginView extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  "Welcome!",
+                  "Welcome back!",
                   style: GoogleFonts.poppins(
                     color: const Color(0xFF1C1A58),
                     fontSize: 36,
@@ -91,7 +85,7 @@ class LoginView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  "Sign up to continue",
+                  "Sign in to continue",
                   style: GoogleFonts.poppins(
                     color: Colors.grey[700],
                     fontSize: 16,
@@ -102,7 +96,7 @@ class LoginView extends StatelessWidget {
                 BlocBuilder<LoginViewModel, LoginState>(
                   builder: (context, state) {
                     if (state.isLoading) {
-                      return const CircularProgressIndicator(); // or a custom loader
+                      return const CircularProgressIndicator();
                     } else {
                       return GoogleSignInButton(
                         onPressed: () => _handleGoogleSignIn(context),
@@ -110,7 +104,6 @@ class LoginView extends StatelessWidget {
                     }
                   },
                 ),
-
                 const SizedBox(height: 40),
                 GestureDetector(
                   onTap: () {
@@ -126,9 +119,9 @@ class LoginView extends StatelessWidget {
                         color: Colors.grey[700],
                       ),
                       children: [
-                        const TextSpan(text: "Already have account? "),
+                        const TextSpan(text: "Don't have an account? "),
                         TextSpan(
-                          text: "Login",
+                          text: "Register",
                           style: GoogleFonts.poppins(
                             color: Colors.blue,
                             fontWeight: FontWeight.bold,

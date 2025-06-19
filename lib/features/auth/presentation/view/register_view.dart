@@ -1,25 +1,24 @@
 import 'package:chime/core/common/custom_app.dart';
 import 'package:chime/core/common/google_signIn_button.dart';
-import 'package:chime/features/auth/presentation/view/login_view.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_event.dart';
+import 'package:chime/features/auth/presentation/view_model/login_view_model/login_state.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
+import 'package:chime/features/auth/presentation/view_model/register_view_model/register_event.dart';
+import 'package:chime/features/auth/presentation/view_model/register_view_model/regsiter_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
 
-// ...your other imports...
-
 class RegisterView extends StatelessWidget {
   const RegisterView({super.key});
 
   Future<void> _handleGoogleSignIn(BuildContext context) async {
     final googleSignIn = GoogleSignIn(
-      scopes: [
-        'email',
-        // add other scopes if needed
-      ],
+      scopes: ['email'],
+      serverClientId:
+          "919257690124-g5spm7tfifrbpb69unkr6u69n5m8tus5.apps.googleusercontent.com",
     );
 
     try {
@@ -35,10 +34,8 @@ class RegisterView extends StatelessWidget {
 
       if (idToken != null) {
         // Dispatch event with idToken as credential
-        // ignore: use_build_context_synchronously
         context.read<LoginViewModel>().add(
           LoginWithGoogle(
-            // ignore: use_build_context_synchronously
             context: context,
             clientId:
                 "919257690124-g5spm7tfifrbpb69unkr6u69n5m8tus5.apps.googleusercontent.com",
@@ -65,7 +62,7 @@ class RegisterView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: CustomAppBar(title: "Register"),
+      appBar: CustomAppBar(title: "Register with Google"), // Changed title here
       body: SafeArea(
         child: SingleChildScrollView(
           child: Container(
@@ -92,7 +89,7 @@ class RegisterView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  "Register with google",
+                  "Sign up to continue",
                   style: GoogleFonts.poppins(
                     color: Colors.grey[700],
                     fontSize: 16,
@@ -100,19 +97,22 @@ class RegisterView extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
-
-                GoogleSignInButton(
-                  onPressed: () => _handleGoogleSignIn(context),
+                BlocBuilder<LoginViewModel, LoginState>(
+                  builder: (context, state) {
+                    if (state.isLoading) {
+                      return const CircularProgressIndicator(); // or a custom loader
+                    } else {
+                      return GoogleSignInButton(
+                        onPressed: () => _handleGoogleSignIn(context),
+                      );
+                    }
+                  },
                 ),
-
                 const SizedBox(height: 40),
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginView(),
-                      ),
+                    context.read<RegsiterViewModel>().add(
+                      NavigateToLoginViewEvent(context: context),
                     );
                   },
                   child: RichText(
@@ -123,7 +123,7 @@ class RegisterView extends StatelessWidget {
                         color: Colors.grey[700],
                       ),
                       children: [
-                        const TextSpan(text: "Already have account? "),
+                        const TextSpan(text: "Already have an account? "),
                         TextSpan(
                           text: "Login",
                           style: GoogleFonts.poppins(

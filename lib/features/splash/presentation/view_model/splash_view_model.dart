@@ -1,4 +1,5 @@
 import 'package:chime/app/service_locator/service_locator.dart';
+import 'package:chime/features/auth/data/data_source/local_datasource/user_local_datasource.dart';
 import 'package:chime/features/auth/domain/repository/student_repository.dart';
 import 'package:chime/features/auth/presentation/view/login_view.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
@@ -13,15 +14,16 @@ class SplashViewModel extends Cubit<void> {
 
   Future<void> init(BuildContext context) async {
     await Future.delayed(const Duration(seconds: 2));
+    // ignore: use_build_context_synchronously
     await verifyUser(context);
   }
 
   Future<void> verifyUser(BuildContext context) async {
     final result = await _userRepository.verifyUser();
 
-    result.fold(
-      (failure) {
-        // ❌ Failed or not logged in → go to Login
+    await result.fold(
+      (failure) async {
+        // ❌ Verification failed → go to Login
         if (context.mounted) {
           Navigator.pushReplacement(
             context,
@@ -35,15 +37,14 @@ class SplashViewModel extends Cubit<void> {
           );
         }
       },
-      (user) {
-        // ✅ Verified → go to Home (or any protected screen)
+      (user) async {
+        // ✅ Verified → cache and navigate to Home
+        await UserLocalDatasource().cacheUser(user); // ✅ FIXED: pass user
+
         if (context.mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder:
-                  (_) => const HomeView(), // Change to your actual home view
-            ),
+            MaterialPageRoute(builder: (_) => const HomeView()),
           );
         }
       },

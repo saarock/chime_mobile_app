@@ -15,10 +15,7 @@ UserApiModel _$UserApiModelFromJson(Map<String, dynamic> json) => UserApiModel(
   profilePicture: json['profilePicture'] as String?,
   age: const StringOrIntToIntConverter().fromJson(json['age']),
   gender: $enumDecodeNullable(_$GenderEnumMap, json['gender']),
-  relationShipStatus: $enumDecodeNullable(
-    _$RelationshipStatusEnumMap,
-    json['relationShipStatus'],
-  ),
+  relationShipStatus: json['relationShipStatus'] as String?,
   active: json['active'] as bool,
   country: json['country'] as String?,
   role: json['role'] as String,
@@ -37,8 +34,7 @@ Map<String, dynamic> _$UserApiModelToJson(UserApiModel instance) =>
       'profilePicture': instance.profilePicture,
       'age': const StringOrIntToIntConverter().toJson(instance.age),
       'gender': _$GenderEnumMap[instance.gender],
-      'relationShipStatus':
-          _$RelationshipStatusEnumMap[instance.relationShipStatus],
+      'relationShipStatus': instance.relationShipStatus,
       'active': instance.active,
       'country': instance.country,
       'role': instance.role,
@@ -51,10 +47,4 @@ const _$GenderEnumMap = {
   Gender.male: 'male',
   Gender.female: 'female',
   Gender.other: 'other',
-};
-
-const _$RelationshipStatusEnumMap = {
-  RelationshipStatus.single: 'single',
-  RelationshipStatus.mingle: 'mingle',
-  RelationshipStatus.notInterest: 'notInterest',
 };

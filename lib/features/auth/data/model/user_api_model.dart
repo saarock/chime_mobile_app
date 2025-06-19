@@ -5,8 +5,6 @@ part 'user_api_model.g.dart';
 
 enum Gender { male, female, other }
 
-enum RelationshipStatus { single, mingle, notInterest }
-
 @JsonSerializable()
 class UserApiModel extends Equatable {
   @JsonKey(name: '_id')
@@ -24,7 +22,7 @@ class UserApiModel extends Equatable {
   final Gender? gender;
 
   @JsonKey(name: 'relationShipStatus')
-  final RelationshipStatus? relationShipStatus;
+  final String? relationShipStatus;
 
   final bool active;
   final String? country;

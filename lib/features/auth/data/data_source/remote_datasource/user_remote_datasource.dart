@@ -24,8 +24,6 @@ class UserRemoteDatasource implements IUserDataSource {
         final data = response.data;
         // Extract userData nested inside data
         final userJson = data['data']['userData'];
-        print(userJson);
-        print(userJson);
         final user = UserApiModel.fromJson(userJson);
         return user;
       } else {
@@ -38,7 +36,22 @@ class UserRemoteDatasource implements IUserDataSource {
 
   @override
   Future<UserApiModel> verifyUser() async {
-    final response = await _apiService.dio.get('/auth/verify');
-    return UserApiModel.fromJson(response.data);
+    try {
+      final response = await _apiService.dio.get(ApiEndpoints.verifyUser);
+      if (response.statusCode == 200) {
+        final data = response.data;
+        // Extract userData
+        final userJson = data['data']['userData'];
+        final String accessToken = data['data']['accessToken'];
+        // CookieCache.saveAccessToken(accessToken);
+        print("Hello AAYUSH This is the acess token");
+        print(accessToken);
+        return UserApiModel.fromJson(userJson);
+      } else {
+        throw Exception("Anauthorized user");
+      }
+    } catch (error) {
+      throw Exception("AuAuthorized Request: Failed to verify user");
+    }
   }
 }

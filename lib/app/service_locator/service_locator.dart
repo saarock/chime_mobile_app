@@ -1,7 +1,9 @@
 import 'package:chime/core/network/api_service.dart';
+import 'package:chime/core/network/cookie_interceptor.dart';
 import 'package:chime/core/network/hive_service.dart';
 import 'package:chime/features/auth/data/data_source/remote_datasource/user_remote_datasource.dart';
 import 'package:chime/features/auth/data/repository/remote_repository/user_remote_repository.dart';
+import 'package:chime/features/auth/domain/repository/student_repository.dart';
 import 'package:chime/features/auth/domain/use_case/user_login_with_google_usecase.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
 import 'package:chime/features/auth/presentation/view_model/register_view_model/regsiter_view_model.dart';
@@ -11,6 +13,7 @@ import 'package:chime/features/video-call/presentation/view_model/video_view_mod
 
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final serviceLocator = GetIt.instance;
 
@@ -61,27 +64,28 @@ Future<void> _initSplashModule() async {
 // ========== Auth Module: Login + Register ==========
 Future<void> _initAuthModule() async {
   // Data Source
-  serviceLocator.registerFactory(
+  serviceLocator.registerFactory<UserRemoteDatasource>(
     () => UserRemoteDatasource(apiService: serviceLocator<ApiService>()),
   );
 
-  // Repository
-  serviceLocator.registerFactory(
+  // Repository registered as interface IUserRepository
+  serviceLocator.registerFactory<IUserRepository>(
     () => UserRemoteRepository(
       userRemoteDatasource: serviceLocator<UserRemoteDatasource>(),
     ),
   );
 
   // Use Case
-  serviceLocator.registerFactory(
+  serviceLocator.registerFactory<UserLoginWithGoogleUsecase>(
     () => UserLoginWithGoogleUsecase(
-      userRepository: serviceLocator<UserRemoteRepository>(),
+      userRepository: serviceLocator<IUserRepository>(),
     ),
   );
 
   // ViewModels
-  serviceLocator.registerFactory(
+  serviceLocator.registerFactory<LoginViewModel>(
     () => LoginViewModel(serviceLocator<UserLoginWithGoogleUsecase>()),
   );
-  serviceLocator.registerFactory(() => RegsiterViewModel());
+
+  serviceLocator.registerFactory<RegsiterViewModel>(() => RegsiterViewModel());
 }
