@@ -1,5 +1,4 @@
 import 'package:chime/core/network/api_service.dart';
-import 'package:chime/core/network/cookie_interceptor.dart';
 import 'package:chime/core/network/hive_service.dart';
 import 'package:chime/features/auth/data/data_source/remote_datasource/user_remote_datasource.dart';
 import 'package:chime/features/auth/data/repository/remote_repository/user_remote_repository.dart';
