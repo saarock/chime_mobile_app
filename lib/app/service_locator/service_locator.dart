@@ -1,5 +1,6 @@
 import 'package:chime/core/network/api_service.dart';
 import 'package:chime/core/network/hive_service.dart';
+import 'package:chime/core/utils/notification_service.dart';
 import 'package:chime/features/auth/data/data_source/remote_datasource/user_remote_datasource.dart';
 import 'package:chime/features/auth/data/repository/remote_repository/user_remote_repository.dart';
 import 'package:chime/features/auth/domain/repository/student_repository.dart';
@@ -25,6 +26,15 @@ Future<void> initDependencies() async {
   await _initVideoModule(); // Register VideoCubit here
   await _initHomeModule();
   await _initProfileModule();
+  await _notificationServiceInit();
+}
+
+// Notification
+Future<void> _notificationServiceInit() async {
+  await NotificationService.init();
+  serviceLocator.registerLazySingleton<NotificationService>(
+    () => NotificationService(),
+  );
 }
 
 // Home

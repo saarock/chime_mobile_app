@@ -19,3 +19,12 @@ class ConnectSocket extends VideoEvent {
 class DisconnectSocket extends VideoEvent {}
 
 // Add other events like JoinQueue, LeaveQueue, IncomingCallReceived, etc.
+
+class StartRandomCall extends VideoEvent {
+  final Map<String, dynamic> userDetails; // user info to join queue
+
+  const StartRandomCall({required this.userDetails});
+
+  @override
+  List<Object?> get props => [userDetails];
+}

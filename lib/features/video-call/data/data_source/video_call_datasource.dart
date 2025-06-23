@@ -8,7 +8,7 @@ abstract interface class IVideoCallDataSource {
   Future<void> dispose();
 
   /// Sends a request to join the random call queue with user details.
-  void joinQueue({required Map<String, dynamic> userDetails});
+  void startRandomCall({required Map<String, dynamic> userDetails});
 
   /// Sends a request to leave the random call queue.
   void leaveQueue();
@@ -39,4 +39,8 @@ abstract interface class IVideoCallDataSource {
 
   /// Listens when the call is ended by the peer.
   void onCallEnded(void Function() handler);
+
+  // Add these two methods here for socket events:
+  void onSelfLoop(void Function(dynamic) handler);
+  void onWait(void Function(dynamic) handler);
 }

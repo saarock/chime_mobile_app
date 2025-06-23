@@ -35,7 +35,7 @@ class VideoCallDatasource implements IVideoCallDataSource {
   }
 
   @override
-  void joinQueue({required Map<String, dynamic> userDetails}) {
+  void startRandomCall({required Map<String, dynamic> userDetails}) {
     _socket.emit(SocketEventKeys.call, {'userDetails': userDetails});
   }
 
@@ -101,20 +101,22 @@ class VideoCallDatasource implements IVideoCallDataSource {
     _socket.on("user:call-ended", (_) => handler());
   }
 
+  @override
+  void onSelfLoop(void Function(dynamic) handler) =>
+      _socket.on("self-loop", handler);
+
+  @override
+  void onWait(void Function(dynamic) handler) => _socket.on("wait", handler);
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Optional Custom Handlers
   // ─────────────────────────────────────────────────────────────────────────────
-
-  void onWait(void Function(dynamic) handler) => _socket.on("wait", handler);
 
   void onMatchFound(void Function(dynamic) handler) =>
       _socket.on("user:match-found", handler);
 
   void onNextTry(void Function(dynamic) handler) =>
       _socket.on("user:call-ended:try:for:other", handler);
-
-  void onSelfLoop(void Function(dynamic) handler) =>
-      _socket.on("self-loop", handler);
 
   void onError(void Function(dynamic) handler) {
     _socket.on("video:global:error", handler);
