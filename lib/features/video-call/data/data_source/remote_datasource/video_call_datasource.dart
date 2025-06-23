@@ -6,20 +6,22 @@ class VideoCallDatasource implements IVideoCallDataSource {
   late IO.Socket _socket;
 
   @override
-  Future<void> initialize({required String userId, String? jwt}) async {
+  Future<void> initialize({String? jwt}) async {
+    print("I am running to connect to the socket on node server!!!!!");
     _socket = IO.io(
-      'http://localhost:8000/video',
+      'http://10.0.2.2:8000/video', // ← changed from localhost
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
           .setExtraHeaders({
-            if (jwt != null) 'cookie': 'jwt=$jwt', // send cookie manually
+            if (jwt != null)
+              'cookie': 'accessToken=$jwt', // send cookie manually
           })
-          .setQuery({'userId': userId})
           .build(),
     );
 
     _socket.connect();
+    print("socket is connected");
 
     _socket.onConnect((_) => print('Socket connected ✅'));
     _socket.onDisconnect((_) => print('Socket disconnected ❌'));

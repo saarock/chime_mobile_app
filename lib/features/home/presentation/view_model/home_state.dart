@@ -24,7 +24,7 @@ class HomeState {
       loginViewModel: loginViewModel,
       views: [
         BlocProvider.value(
-          value: serviceLocator<VideoCubit>(),
+          value: serviceLocator<VideoBloc>(),
           child: VideoCallView(),
         ),
         BlocProvider.value(value: loginViewModel, child: ProfileView()),

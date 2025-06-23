@@ -8,6 +8,8 @@ import 'package:chime/features/auth/presentation/view_model/login_view_model/log
 import 'package:chime/features/auth/presentation/view_model/register_view_model/regsiter_view_model.dart';
 import 'package:chime/features/home/presentation/view_model/home_view_model.dart';
 import 'package:chime/features/splash/presentation/view_model/splash_view_model.dart';
+import 'package:chime/features/video-call/data/data_source/remote_datasource/video_call_datasource.dart';
+import 'package:chime/features/video-call/data/data_source/video_call_datasource.dart';
 import 'package:chime/features/video-call/presentation/view_model/video_view_model.dart';
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
@@ -35,9 +37,17 @@ Future<void> _initHomeModule() async {
 // Profile
 Future<void> _initProfileModule() async {}
 
-// Video (register your VideoCubit here)
+// Video (register your VideoBloc here here)
 Future<void> _initVideoModule() async {
-  serviceLocator.registerFactory(() => VideoCubit());
+  // Register your data source (singleton or factory)
+  serviceLocator.registerLazySingleton<IVideoCallDataSource>(
+    () => VideoCallDatasource(),
+  );
+
+  // Register VideoBloc and inject the data source from serviceLocator
+  serviceLocator.registerFactory(
+    () => VideoBloc(serviceLocator<IVideoCallDataSource>()),
+  );
 }
 
 // ========== Local Storage Module ==========

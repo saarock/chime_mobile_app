@@ -44,7 +44,7 @@ Map<String, dynamic> _$UserApiModelToJson(UserApiModel instance) =>
     };
 
 const _$GenderEnumMap = {
-  Gender.male: 'male',
-  Gender.female: 'female',
-  Gender.other: 'other',
+  Gender.Male: 'Male',
+  Gender.Female: 'Female',
+  Gender.Other: 'Other',
 };

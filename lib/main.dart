@@ -18,7 +18,7 @@ void main() async {
         BlocProvider(create: (_) => serviceLocator<LoginViewModel>()),
         BlocProvider(create: (_) => serviceLocator<RegsiterViewModel>()),
         BlocProvider(create: (_) => serviceLocator<HomeViewModel>()),
-        BlocProvider(create: (_) => serviceLocator<VideoCubit>()),
+        BlocProvider(create: (_) => serviceLocator<VideoBloc>()),
       ],
       child: const App(),
     ),

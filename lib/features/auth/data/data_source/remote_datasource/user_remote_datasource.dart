@@ -1,4 +1,5 @@
 import 'package:chime/app/constant/api_endpoints.dart';
+import 'package:chime/app/shared_pref/cooki_cache.dart';
 import 'package:chime/core/network/api_service.dart';
 import 'package:chime/features/auth/data/data_source/user_data_source.dart';
 import 'package:chime/features/auth/data/model/user_api_model.dart';
@@ -24,6 +25,8 @@ class UserRemoteDatasource implements IUserDataSource {
         final data = response.data;
         // Extract userData nested inside data
         final userJson = data['data']['userData'];
+        final accessToken = data['data']['accessToken'];
+        await CookieCache.saveAccessToken(accessToken);
         final user = UserApiModel.fromJson(userJson);
         return user;
       } else {

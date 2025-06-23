@@ -3,7 +3,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'user_api_model.g.dart';
 
-enum Gender { male, female, other }
+enum Gender { Male, Female, Other }
 
 @JsonSerializable()
 class UserApiModel extends Equatable {

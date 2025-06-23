@@ -2,7 +2,7 @@
 /// such as signaling, queue management, and connection events.
 abstract interface class IVideoCallDataSource {
   /// Initializes the socket connection with user metadata and optional auth token.
-  Future<void> initialize({required String userId, String? jwt});
+  Future<void> initialize({String? jwt});
 
   /// Disconnects and cleans up the socket connection.
   Future<void> dispose();
