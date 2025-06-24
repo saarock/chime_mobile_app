@@ -1,6 +1,5 @@
 import 'package:chime/core/network/api_service.dart';
 import 'package:chime/core/network/hive_service.dart';
-import 'package:chime/core/utils/notification_service.dart';
 import 'package:chime/features/auth/data/data_source/remote_datasource/user_remote_datasource.dart';
 import 'package:chime/features/auth/data/repository/remote_repository/user_remote_repository.dart';
 import 'package:chime/features/auth/domain/repository/student_repository.dart';
@@ -12,6 +11,12 @@ import 'package:chime/features/splash/presentation/view_model/splash_view_model.
 import 'package:chime/features/video-call/data/data_source/remote_datasource/video_call_datasource.dart';
 import 'package:chime/features/video-call/data/data_source/video_call_datasource.dart';
 import 'package:chime/features/video-call/domain/repository/video_call_repository.dart';
+import 'package:chime/features/video-call/domain/use_case/create_peer_connection_usecase.dart';
+import 'package:chime/features/video-call/domain/use_case/end_call_usecase.dart';
+import 'package:chime/features/video-call/domain/use_case/get_localstream_usecase.dart';
+import 'package:chime/features/video-call/domain/use_case/send_answer_usecase.dart';
+import 'package:chime/features/video-call/domain/use_case/send_ice_candidate_usecase.dart';
+import 'package:chime/features/video-call/domain/use_case/send_offer_usecase.dart';
 import 'package:chime/features/video-call/presentation/view_model/video_view_model.dart';
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
@@ -32,10 +37,10 @@ Future<void> initDependencies() async {
 
 // Notification
 Future<void> _notificationServiceInit() async {
-  await NotificationService.init();
-  serviceLocator.registerLazySingleton<NotificationService>(
-    () => NotificationService(),
-  );
+  // await NotificationService.init();
+  // serviceLocator.registerLazySingleton<NotificationService>(
+  //   () => NotificationService(),
+  // );
 }
 
 // Home
@@ -50,15 +55,68 @@ Future<void> _initProfileModule() async {}
 
 // Video (register your VideoBloc here here)
 Future<void> _initVideoModule() async {
-  // Register your data source (singleton or factory)
-  // serviceLocator.registerLazySingleton<IVideoCallDataSource>(
-  //   () => VideoCallDataSource(),
-  // );
+  // Register the data source first
+  if (!serviceLocator.isRegistered<IVideoCallDataSource>()) {
+    serviceLocator.registerLazySingleton<IVideoCallDataSource>(
+      () => VideoCallDataSourceImpl(), // your concrete implementation here
+    );
+  }
+  // Register the repository if not registered yet
+  if (!serviceLocator.isRegistered<IVideoCallRepository>()) {
+    serviceLocator.registerLazySingleton<IVideoCallRepository>(
+      () => VideoCallRepositoryImpl(
+        serviceLocator<
+          IVideoCallDataSource
+        >(), // <-- inject the data source here
+      ),
+    );
+  }
 
-  // Register VideoBloc and inject the data source from serviceLocator
-  // serviceLocator.registerFactory(
-  //   () => VideoBloc(serviceLocator<IVideoCallRepository>()),
-  // );
+  // Make sure all the use cases are registered before VideoBloc
+  if (!serviceLocator.isRegistered<SendOfferUseCase>()) {
+    serviceLocator.registerLazySingleton<SendOfferUseCase>(
+      () => SendOfferUseCase(serviceLocator<IVideoCallRepository>()),
+    );
+  }
+  if (!serviceLocator.isRegistered<SendAnswerUseCase>()) {
+    serviceLocator.registerLazySingleton<SendAnswerUseCase>(
+      () => SendAnswerUseCase(serviceLocator<IVideoCallRepository>()),
+    );
+  }
+  if (!serviceLocator.isRegistered<SendIceCandidateUseCase>()) {
+    serviceLocator.registerLazySingleton<SendIceCandidateUseCase>(
+      () => SendIceCandidateUseCase(serviceLocator<IVideoCallRepository>()),
+    );
+  }
+  if (!serviceLocator.isRegistered<EndCallUseCase>()) {
+    serviceLocator.registerLazySingleton<EndCallUseCase>(
+      () => EndCallUseCase(serviceLocator<IVideoCallRepository>()),
+    );
+  }
+  if (!serviceLocator.isRegistered<GetLocalStreamUseCase>()) {
+    serviceLocator.registerLazySingleton<GetLocalStreamUseCase>(
+      () => GetLocalStreamUseCase(serviceLocator<IVideoCallRepository>()),
+    );
+  }
+  if (!serviceLocator.isRegistered<CreatePeerConnectionUseCase>()) {
+    serviceLocator.registerLazySingleton<CreatePeerConnectionUseCase>(
+      () => CreatePeerConnectionUseCase(serviceLocator<IVideoCallRepository>()),
+    );
+  }
+
+  // Finally, register the VideoBloc with all dependencies injected
+  serviceLocator.registerFactory<VideoBloc>(
+    () => VideoBloc(
+      repository: serviceLocator<IVideoCallRepository>(),
+      sendOfferUseCase: serviceLocator<SendOfferUseCase>(),
+      sendAnswerUseCase: serviceLocator<SendAnswerUseCase>(),
+      sendIceCandidateUseCase: serviceLocator<SendIceCandidateUseCase>(),
+      endCallUseCase: serviceLocator<EndCallUseCase>(),
+      getLocalStreamUseCase: serviceLocator<GetLocalStreamUseCase>(),
+      createPeerConnectionUseCase:
+          serviceLocator<CreatePeerConnectionUseCase>(),
+    ),
+  );
 }
 
 // ========== Local Storage Module ==========

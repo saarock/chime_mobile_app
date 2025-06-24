@@ -40,6 +40,7 @@ class SplashViewModel extends Cubit<void> {
       (user) async {
         // ✅ Verified → cache and navigate to Home
         await UserLocalDatasource().cacheUser(user); // ✅ FIXED: pass user
+        print("******************************************** yes yes");
 
         if (context.mounted) {
           Navigator.pushReplacement(

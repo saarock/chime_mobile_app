@@ -1,4 +1,4 @@
-import 'package:chime/features/video-call/data/data_source/remote_datasource/video_call_datasource.dart';
+import 'package:chime/features/video-call/data/data_source/video_call_datasource.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 abstract class IVideoCallRepository {

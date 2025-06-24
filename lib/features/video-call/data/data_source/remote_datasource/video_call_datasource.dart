@@ -1,25 +1,6 @@
+import 'package:chime/features/video-call/data/data_source/video_call_datasource.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-
-abstract class IVideoCallDataSource {
-  void startRandomCall(Map<String, dynamic> userDetails);
-  Future<void> initialize({String? jwt});
-  void sendOffer(Map<String, dynamic> offer);
-  void sendAnswer(Map<String, dynamic> answer);
-  void sendIceCandidate(Map<String, dynamic> candidate);
-  void endCall(String partnerId);
-
-  // Socket listeners registration
-  void onOfferReceived(void Function(Map<String, dynamic>) handler);
-  void onAnswerReceived(void Function(Map<String, dynamic>) handler);
-  void onIceCandidateReceived(void Function(Map<String, dynamic>) handler);
-  void onCallEnded(void Function() handler);
-
-  // Local WebRTC utilities
-  Future<MediaStream> getLocalStream();
-  Future<RTCPeerConnection> createPeerConnection(MediaStream localStream);
-  Future<void> dispose();
-}
 
 class VideoCallDataSourceImpl implements IVideoCallDataSource {
   late IO.Socket _socket;
@@ -29,11 +10,11 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
   @override
   Future<void> initialize({String? jwt}) async {
     _socket = IO.io(
-      'http://your-server-url',
+      'http://10.0.2.2:8000/video',
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
-          .setExtraHeaders({if (jwt != null) 'Authorization': 'Bearer $jwt'})
+          .setExtraHeaders({if (jwt != null) 'Cookie': 'accessToken=$jwt'})
           .build(),
     );
     _socket.connect();

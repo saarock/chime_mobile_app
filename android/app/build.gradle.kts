@@ -9,13 +9,9 @@ android {
     namespace = "com.example.chime"
     compileSdk = flutter.compileSdkVersion
 
-
-
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {

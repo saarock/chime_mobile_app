@@ -180,10 +180,18 @@ class _VideoCallViewState extends State<VideoCallView> {
                             return;
                           }
 
-                          final partnerId = userApiModel.id.toString();
-                          context.read<VideoBloc>().add(
-                            EndCallEvent(partnerId),
-                          );
+                          final partnerId =
+                              context.read<VideoBloc>().currentPartnerId;
+                          if (partnerId != null) {
+                            context.read<VideoBloc>().add(
+                              EndCallEvent(partnerId),
+                            );
+                          } else {
+                            return showMySnackBar(
+                              context: context,
+                              message: "Partner id is  requried",
+                            );
+                          }
                         },
                         icon: const Icon(Icons.call_end),
                         label: const Text("End Call"),

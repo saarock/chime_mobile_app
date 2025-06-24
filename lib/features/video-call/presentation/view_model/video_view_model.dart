@@ -12,6 +12,8 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 class VideoBloc extends Bloc<VideoEvent, VideoState> {
   final IVideoCallRepository repository;
+  String? _currentPartnerId;
+  String? get currentPartnerId => _currentPartnerId;
 
   final SendOfferUseCase sendOfferUseCase;
   final SendAnswerUseCase sendAnswerUseCase;
@@ -200,6 +202,7 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     _peerConnection?.close();
     _peerConnection = null;
     _remoteStream = null;
+    _currentPartnerId = null;
     emit(VideoCallEnded());
   }
 
@@ -237,6 +240,7 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
         'to': partnerId,
         'offer': {'sdp': offer.sdp, 'type': offer.type},
       });
+      _currentPartnerId = partnerId;
     } catch (e) {
       emit(VideoError('Failed to create or send offer: $e'));
     }

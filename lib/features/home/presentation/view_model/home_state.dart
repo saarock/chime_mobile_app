@@ -1,6 +1,5 @@
 import 'package:chime/app/service_locator/service_locator.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
-import 'package:chime/features/home/presentation/view/bottom_view/dashboard_view.dart';
 import 'package:chime/features/profile/presentation/view/profile_view.dart';
 import 'package:chime/features/video-call/presentation/view/video_call_view.dart';
 import 'package:chime/features/video-call/presentation/view_model/video_view_model.dart';
@@ -23,8 +22,11 @@ class HomeState {
       selectedIndex: 0,
       loginViewModel: loginViewModel,
       views: [
-        BlocProvider.value(
-          value: serviceLocator<VideoBloc>(),
+        MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: serviceLocator<VideoBloc>()),
+            BlocProvider.value(value: loginViewModel),
+          ],
           child: VideoCallView(),
         ),
         BlocProvider.value(value: loginViewModel, child: ProfileView()),
