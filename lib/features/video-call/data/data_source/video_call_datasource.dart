@@ -1,3 +1,5 @@
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+
 /// `IVideoCallDataSource` defines the contract for video call data operations,
 /// such as signaling, queue management, and connection events.
 abstract interface class IVideoCallDataSource {
@@ -8,7 +10,7 @@ abstract interface class IVideoCallDataSource {
   Future<void> dispose();
 
   /// Sends a request to join the random call queue with user details.
-  void startRandomCall({required Map<String, dynamic> userDetails});
+  void randomCall({required Map<String, dynamic> userDetails});
 
   /// Sends a request to leave the random call queue.
   void leaveQueue();
@@ -43,4 +45,8 @@ abstract interface class IVideoCallDataSource {
   // Add these two methods here for socket events:
   void onSelfLoop(void Function(dynamic) handler);
   void onWait(void Function(dynamic) handler);
+
+  // Web rtc
+  Future<MediaStream> getLocalStream();
+  Future<RTCPeerConnection> createPeerConnection(MediaStream localStream);
 }
