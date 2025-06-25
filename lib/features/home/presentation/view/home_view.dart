@@ -26,12 +26,31 @@ class _HomeViewState extends State<HomeView> {
         actions: [
           IconButton(
             onPressed: () {
-              showMySnackBar(
-                context: context,
-                message: "Logging out...",
-                color: Colors.red,
+              myDialog(
+                context,
+                title: "Logout",
+                content: "Are you sure you want to logout?",
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(false); // Close dialog (No)
+                    },
+                    child: const Text("No"),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(true); // Close dialog (Yes)
+                      showMySnackBar(
+                        context: context,
+                        message: "Logging out...",
+                        color: Colors.red,
+                      );
+                      context.read<HomeViewModel>().logout(context);
+                    },
+                    child: const Text("Yes"),
+                  ),
+                ],
               );
-              context.read<HomeViewModel>().logout(context);
             },
             icon: const Icon(Icons.logout),
           ),
@@ -52,7 +71,7 @@ class _HomeViewState extends State<HomeView> {
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Color(0xFF191833),
+                    color: const Color(0xFF191833),
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(color: Colors.white.withOpacity(0.2)),
                     boxShadow: [
@@ -95,4 +114,22 @@ class _HomeViewState extends State<HomeView> {
       ),
     );
   }
+}
+
+// The myDialog function - you can put this in my_dialog.dart or directly here
+Future<bool?> myDialog(
+  BuildContext context, {
+  required String title,
+  required String content,
+  required List<Widget> actions,
+}) {
+  return showDialog<bool>(
+    context: context,
+    builder:
+        (context) => AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          actions: actions,
+        ),
+  );
 }

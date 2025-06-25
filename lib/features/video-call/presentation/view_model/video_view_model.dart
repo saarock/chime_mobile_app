@@ -74,18 +74,6 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     try {
       await repository.initConnection(jwt: event.jwt);
 
-      // Listen to socket streams and add events to Bloc
-      _offerSub = repository.offerStream.listen((offer) {
-        add(OfferReceivedEvent(offer));
-      });
-
-      // Online user count
-      _onlineUserSub = repository.onlineUserCountStream.listen((count) {
-        _onlineUserCount = count;
-        // Optionally emit a state or update UI by adding a new event
-        print("👥 Online Users: $count");
-      });
-
       // Fetch count manually once
       await repository.fetchOnlineUserCount();
 
@@ -111,6 +99,12 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
 
       _matchFoundSub = repository.matchFoundStream.listen((partnerInfo) {
         add(MatchFoundEvent(partnerInfo));
+      });
+
+      // Online user count
+      _onlineUserSub = repository.onlineUserCountStream.listen((count) {
+        _onlineUserCount = count;
+        print('🧑‍🤝‍🧑 Online Users: $count');
       });
 
       emit(VideoConnected());

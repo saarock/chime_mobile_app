@@ -1,6 +1,9 @@
 import 'package:chime/app/service_locator/service_locator.dart';
 import 'package:chime/features/auth/data/data_source/local_datasource/user_local_datasource.dart';
+import 'package:chime/features/auth/domain/repository/student_repository.dart';
 import 'package:chime/features/auth/domain/use_case/user_login_with_google_usecase.dart';
+import 'package:chime/features/auth/domain/use_case/user_verify_usecase.dart';
+import 'package:chime/features/auth/presentation/view/login_view.dart';
 import 'package:chime/features/auth/presentation/view/register_view.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_event.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_state.dart';
@@ -12,15 +15,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoginViewModel extends Bloc<LoginEvent, LoginState> {
   final UserLoginWithGoogleUsecase _userLoginWithGoogleUsecase;
+  final UserVerifyUsecase _userVerifyUsecase; // Use this to verify user
+  final IUserRepository
+  _userRepository; // You referenced _userRepository in verifyUser but never defined it here
 
-  LoginViewModel(this._userLoginWithGoogleUsecase)
-    : super(LoginState.initial()) {
+  LoginViewModel(
+    this._userLoginWithGoogleUsecase,
+    this._userVerifyUsecase,
+    this._userRepository, // Inject repository here if you want to call verifyUser directly
+  ) : super(LoginState.initial()) {
     on<NavigateToRegisterViewEvent>(_onNavigateToRegisterView);
     on<LoginWithGoogle>(_loginWithGoogle);
     on<NavigateToHomeEvent>(_onNavigateToHomeView);
   }
 
-  // ============ Navigate to  the register page =============== //
+  // Navigate to register page
   void _onNavigateToRegisterView(
     NavigateToRegisterViewEvent event,
     Emitter<LoginState> emit,
@@ -34,7 +43,7 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
                 providers: [
                   BlocProvider.value(
                     value: serviceLocator<RegsiterViewModel>(),
-                  ), // Fixed missing parentheses here
+                  ),
                 ],
                 child: RegisterView(),
               ),
@@ -43,7 +52,7 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
     }
   }
 
-  // Login with google
+  // Login with Google
   void _loginWithGoogle(LoginWithGoogle event, Emitter<LoginState> emit) async {
     emit(state.copyWith(isLoading: true, isSuccess: false));
 
@@ -65,10 +74,6 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
             userApiModel: userData,
           ),
         );
-        print("Ok ok ");
-        print(userData.toJson());
-        // ignore: use_build_context_synchronously
-        // Only add another event if the bloc is still active
         if (!emit.isDone) {
           add(NavigateToHomeEvent(context: event.context));
         }
@@ -76,7 +81,6 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
     );
   }
 
-  // Navigate to home
   // Navigate to home
   void _onNavigateToHomeView(
     NavigateToHomeEvent event,
@@ -92,8 +96,57 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
                 child: const HomeView(),
               ),
         ),
-        (route) => false, // This removes all previous routes
+        (route) => false,
       );
     }
+  }
+
+  // Verify user using the usecase
+  Future<void> verifyUser(BuildContext context) async {
+    final result = await _userVerifyUsecase(const UserVerifyParams());
+
+    await result.fold(
+      (failure) async {
+        // Verification failed → go to Login screen
+        if (context.mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => BlocProvider.value(
+                    value: serviceLocator<LoginViewModel>(),
+                    child: const LoginView(),
+                  ),
+            ),
+          );
+        }
+      },
+      (userData) async {
+        print("User verified:");
+        print(userData);
+        // Cache user locally
+        await UserLocalDatasource().cacheUser(userData);
+        emit(
+          state.copyWith(
+            isLoading: false,
+            isSuccess: true,
+            userApiModel: userData,
+          ),
+        );
+
+        if (context.mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => BlocProvider<HomeViewModel>(
+                    create: (_) => HomeViewModel(loginViewModel: this),
+                    child: const HomeView(),
+                  ),
+            ),
+          );
+        }
+      },
+    );
   }
 }

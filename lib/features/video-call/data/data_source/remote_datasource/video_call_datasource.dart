@@ -93,6 +93,11 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
   }
 
   @override
+  void onUserCount(void Function(int) handler) {
+    _onOnlineUsersCount = handler;
+  }
+
+  @override
   void startRandomCall(Map<String, dynamic> userDetails) {
     print("random call started");
     _socket.emit('start:random-video-call', userDetails);
@@ -161,18 +166,7 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
 
   @override
   void emitGetOnlineUserCount(void Function(int) callback) {
-    _socket.emitWithAck(
-      'onlineUsersCount',
-      null,
-      ack: (response) {
-        print(response);
-        final count =
-            response is Map && response['count'] is int
-                ? response['count'] as int
-                : 0;
-        callback(count);
-      },
-    );
+    _socket.emit('onlineUsersCount');
   }
 
   // Attach event handlers — these get called from the Bloc

@@ -23,7 +23,6 @@ abstract class IVideoCallRepository {
   Stream<void> get selfLoopStream;
   Stream<Map<String, dynamic>> get matchFoundStream;
   Stream<int> get onlineUserCountStream;
-
   Future<void> fetchOnlineUserCount();
 }
 
@@ -59,6 +58,8 @@ class VideoCallRepositoryImpl implements IVideoCallRepository {
     dataSource.onMatchFound(
       (partnerInfo) => _matchFoundController.add(partnerInfo),
     );
+
+    dataSource.onUserCount((count) => _onlineUserCountController.add(count));
   }
 
   @override
@@ -88,7 +89,6 @@ class VideoCallRepositoryImpl implements IVideoCallRepository {
 
   @override
   Future<void> fetchOnlineUserCount() async {
-    print("fetching online user count");
     dataSource.emitGetOnlineUserCount((count) {
       _onlineUserCountController.add(count);
     });
@@ -112,6 +112,7 @@ class VideoCallRepositoryImpl implements IVideoCallRepository {
     await _waitController.close();
     await _selfLoopController.close();
     await _matchFoundController.close();
+    await _onlineUserCountController.close();
   }
 
   // Expose streams to Bloc

@@ -4,6 +4,7 @@ import 'package:chime/features/auth/data/data_source/remote_datasource/user_remo
 import 'package:chime/features/auth/data/repository/remote_repository/user_remote_repository.dart';
 import 'package:chime/features/auth/domain/repository/student_repository.dart';
 import 'package:chime/features/auth/domain/use_case/user_login_with_google_usecase.dart';
+import 'package:chime/features/auth/domain/use_case/user_verify_usecase.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
 import 'package:chime/features/auth/presentation/view_model/register_view_model/regsiter_view_model.dart';
 import 'package:chime/features/home/presentation/view_model/home_view_model.dart';
@@ -134,7 +135,9 @@ Future<void> _initApiModule() async {
 
 // ========== Splash ViewModel ==========
 Future<void> _initSplashModule() async {
-  serviceLocator.registerFactory(() => SplashViewModel());
+  serviceLocator.registerFactory(
+    () => SplashViewModel(serviceLocator<LoginViewModel>()),
+  );
 }
 
 // ========== Auth Module: Login + Register ==========
@@ -158,9 +161,17 @@ Future<void> _initAuthModule() async {
     ),
   );
 
+  serviceLocator.registerFactory<UserVerifyUsecase>(
+    () => UserVerifyUsecase(userRepository: serviceLocator<IUserRepository>()),
+  );
+
   // ViewModels
   serviceLocator.registerFactory<LoginViewModel>(
-    () => LoginViewModel(serviceLocator<UserLoginWithGoogleUsecase>()),
+    () => LoginViewModel(
+      serviceLocator<UserLoginWithGoogleUsecase>(),
+      serviceLocator<UserVerifyUsecase>(),
+      serviceLocator<IUserRepository>(),
+    ),
   );
 
   serviceLocator.registerFactory<RegsiterViewModel>(() => RegsiterViewModel());

@@ -28,6 +28,8 @@ abstract class IVideoCallDataSource {
   void onError(void Function(String message) handler);
   void onSuccess(void Function(String message) handler);
   void emitGetOnlineUserCount(void Function(int count) callback);
+  // Real-time listener
+  void onUserCount(void Function(int count) handler);
 
   // ───────────────────────────────────────────────
   // 4) WEBRTC UTILITIES

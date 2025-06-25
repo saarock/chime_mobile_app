@@ -69,8 +69,9 @@ class _VideoCallViewState extends State<VideoCallView> {
             }
           },
           builder: (context, state) {
-            String statusMessage = "🔌 Not connected";
+            final onlineCount = context.watch<VideoBloc>().onlineUserCount;
 
+            String statusMessage = "🔌 Not connected";
             if (state is VideoConnecting) {
               statusMessage = "🔄 Connecting to socket...";
             } else if (state is VideoConnected) {
@@ -91,17 +92,30 @@ class _VideoCallViewState extends State<VideoCallView> {
               children: [
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Text(
-                    statusMessage,
-                    style: const TextStyle(color: Colors.white70, fontSize: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        statusMessage,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "👥 Online Users: $onlineCount",
+                        style: const TextStyle(
+                          color: Colors.tealAccent,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-
-                // Video Area
                 Expanded(
                   child: Stack(
                     children: [
-                      // Remote Video or Fallback
                       Positioned.fill(
                         child:
                             _remoteRenderer.srcObject == null
@@ -137,7 +151,6 @@ class _VideoCallViewState extends State<VideoCallView> {
                                               message: "User not found",
                                             );
                                           }
-
                                           context.read<VideoBloc>().add(
                                             StartRandomCall(
                                               userDetails: user.toJson(),
@@ -170,8 +183,6 @@ class _VideoCallViewState extends State<VideoCallView> {
                                           .RTCVideoViewObjectFitCover,
                                 ),
                       ),
-
-                      // Local Video overlayed
                       Positioned(
                         right: 16,
                         bottom: 16,
@@ -188,8 +199,6 @@ class _VideoCallViewState extends State<VideoCallView> {
                     ],
                   ),
                 ),
-
-                // Buttons
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -202,7 +211,6 @@ class _VideoCallViewState extends State<VideoCallView> {
                           final loginState =
                               context.read<LoginViewModel>().state;
                           final user = loginState.userApiModel;
-
                           if (user == null) {
                             showMySnackBar(
                               context: context,
@@ -210,7 +218,6 @@ class _VideoCallViewState extends State<VideoCallView> {
                             );
                             return;
                           }
-
                           context.read<VideoBloc>().add(
                             StartRandomCall(userDetails: user.toJson()),
                           );
@@ -231,7 +238,6 @@ class _VideoCallViewState extends State<VideoCallView> {
                         onPressed: () {
                           final partnerId =
                               context.read<VideoBloc>().currentPartnerId;
-
                           if (partnerId == null) {
                             showMySnackBar(
                               context: context,
@@ -239,7 +245,6 @@ class _VideoCallViewState extends State<VideoCallView> {
                             );
                             return;
                           }
-
                           context.read<VideoBloc>().add(
                             EndCallEvent(partnerId),
                           );

@@ -42,13 +42,15 @@ class UserRemoteDatasource implements IUserDataSource {
     try {
       final response = await _apiService.dio.get(ApiEndpoints.verifyUser);
       if (response.statusCode == 200) {
+        print("Oh yes this is the actual rsponse of hte verify user");
         final data = response.data;
         // Extract userData
         final userJson = data['data']['userData'];
-        final String accessToken = data['data']['accessToken'];
+        // final String accessToken = data['data']['accessToken'];
         // CookieCache.saveAccessToken(accessToken);
         print("Hello AAYUSH This is the acess token");
-        print(accessToken);
+        print(userJson);
+        // print(accessToken);
         return UserApiModel.fromJson(userJson);
       } else {
         throw Exception("Anauthorized user");
