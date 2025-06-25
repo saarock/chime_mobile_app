@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chime/features/video-call/domain/repository/video_call_repository.dart';
 import 'package:chime/features/video-call/domain/use_case/create_peer_connection_usecase.dart';
 import 'package:chime/features/video-call/domain/use_case/end_call_usecase.dart';
@@ -14,6 +16,8 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
   final IVideoCallRepository repository;
   String? _currentPartnerId;
   String? get currentPartnerId => _currentPartnerId;
+  int _onlineUserCount = 0;
+  int get onlineUserCount => _onlineUserCount;
 
   final SendOfferUseCase sendOfferUseCase;
   final SendAnswerUseCase sendAnswerUseCase;
@@ -25,6 +29,16 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
   MediaStream? _remoteStream;
+
+  // Subscriptions to socket event streams
+  late StreamSubscription _offerSub;
+  late StreamSubscription _answerSub;
+  late StreamSubscription _iceCandidateSub;
+  late StreamSubscription _callEndedSub;
+  late StreamSubscription _waitSub;
+  late StreamSubscription _selfLoopSub;
+  late StreamSubscription _matchFoundSub;
+  late StreamSubscription<int> _onlineUserSub;
 
   VideoBloc({
     required this.repository,
@@ -52,20 +66,6 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     on<StartRandomCall>(_onStartRandomCall);
   }
 
-  Future<void> _onStartRandomCall(
-    StartRandomCall event,
-    Emitter<VideoState> emit,
-  ) async {
-    try {
-      emit(VideoWaitingForMatch());
-      // Call repository or usecase method to start a random call with userDetails
-      repository.startRandomCall(event.userDetails);
-      // After that, you might wait for a match event (MatchFoundEvent) triggered by socket listener
-    } catch (e) {
-      emit(VideoError('Failed to start random call: $e'));
-    }
-  }
-
   Future<void> _onConnectSocket(
     ConnectSocket event,
     Emitter<VideoState> emit,
@@ -74,23 +74,60 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     try {
       await repository.initConnection(jwt: event.jwt);
 
-      // Attach socket event listeners to add Bloc events
-      repository.onOfferReceived((offer) => add(OfferReceivedEvent(offer)));
-      repository.onAnswerReceived((answer) => add(AnswerReceivedEvent(answer)));
-      repository.onIceCandidateReceived(
-        (candidate) => add(IceCandidateReceivedEvent(candidate)),
-      );
-      repository.onCallEnded(() => add(CallEndedEvent()));
-      repository.onWait((_) => add(WaitEvent()));
-      repository.onSelfLoop((_) => add(SelfLoopEvent()));
-      repository.onIncomingCall((call) {
-        // Optionally handle incoming call event here if needed
+      // Listen to socket streams and add events to Bloc
+      _offerSub = repository.offerStream.listen((offer) {
+        add(OfferReceivedEvent(offer));
       });
-      repository.onOfferReceived((offer) => add(OfferReceivedEvent(offer)));
+
+      // Online user count
+      _onlineUserSub = repository.onlineUserCountStream.listen((count) {
+        _onlineUserCount = count;
+        // Optionally emit a state or update UI by adding a new event
+        print("👥 Online Users: $count");
+      });
+
+      // Fetch count manually once
+      await repository.fetchOnlineUserCount();
+
+      _answerSub = repository.answerStream.listen((answer) {
+        add(AnswerReceivedEvent(answer));
+      });
+
+      _iceCandidateSub = repository.iceCandidateStream.listen((candidate) {
+        add(IceCandidateReceivedEvent(candidate));
+      });
+
+      _callEndedSub = repository.callEndedStream.listen((_) {
+        add(CallEndedEvent());
+      });
+
+      _waitSub = repository.waitStream.listen((_) {
+        add(WaitEvent());
+      });
+
+      _selfLoopSub = repository.selfLoopStream.listen((_) {
+        add(SelfLoopEvent());
+      });
+
+      _matchFoundSub = repository.matchFoundStream.listen((partnerInfo) {
+        add(MatchFoundEvent(partnerInfo));
+      });
 
       emit(VideoConnected());
     } catch (e) {
       emit(VideoError('Socket connection failed: $e'));
+    }
+  }
+
+  Future<void> _onStartRandomCall(
+    StartRandomCall event,
+    Emitter<VideoState> emit,
+  ) async {
+    try {
+      emit(VideoWaitingForMatch());
+      repository.startRandomCall(event.userDetails);
+    } catch (e) {
+      emit(VideoError('Failed to start random call: $e'));
     }
   }
 
@@ -126,9 +163,10 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
       endCallUseCase.execute(event.partnerId);
       await _peerConnection?.close();
       _peerConnection = null;
-      _localStream?.dispose();
+      await _localStream?.dispose();
       _localStream = null;
       _remoteStream = null;
+      _currentPartnerId = null;
       emit(VideoCallEnded());
     } catch (e) {
       emit(VideoError('Failed to end call: $e'));
@@ -140,19 +178,25 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     Emitter<VideoState> emit,
   ) async {
     try {
+      final offerMap = event.offer;
+      final remoteOffer = offerMap['offer'];
+      final from = offerMap['from'];
+
       if (_peerConnection == null) {
         emit(VideoError('Peer connection not established.'));
         return;
       }
-      final offer = event.offer['offer'];
-      final from = event.offer['from'];
+
+      // Set remote description with received offer
       await _peerConnection!.setRemoteDescription(
-        RTCSessionDescription(offer['sdp'], offer['type']),
+        RTCSessionDescription(remoteOffer['sdp'], remoteOffer['type']),
       );
 
+      // Create and set local description (answer)
       final answer = await _peerConnection!.createAnswer();
       await _peerConnection!.setLocalDescription(answer);
 
+      // Send answer back to caller
       repository.sendAnswer({
         'to': from,
         'answer': {'sdp': answer.sdp, 'type': answer.type},
@@ -168,6 +212,7 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
   ) async {
     try {
       if (_peerConnection == null) return;
+
       final answer = event.answer['answer'];
       await _peerConnection!.setRemoteDescription(
         RTCSessionDescription(answer['sdp'], answer['type']),
@@ -207,6 +252,7 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
   }
 
   void _onWait(WaitEvent event, Emitter<VideoState> emit) {
+    print("Pleased wait...");
     emit(VideoWaitingForMatch());
   }
 
@@ -222,17 +268,21 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     final bool isCaller = partnerInfo['isCaller'] ?? false;
     final String partnerId = partnerInfo['partnerId'] ?? '';
 
+    print("match found");
+
     if (_peerConnection == null) {
       emit(VideoError('Peer connection not ready.'));
       return;
     }
 
     if (!isCaller) {
+      // Not caller, wait for offer from other peer
       emit(VideoWaitingForMatch());
       return;
     }
 
     try {
+      // Caller creates offer, sets local description, and sends offer
       RTCSessionDescription offer = await _peerConnection!.createOffer();
       await _peerConnection!.setLocalDescription(offer);
 
@@ -240,6 +290,7 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
         'to': partnerId,
         'offer': {'sdp': offer.sdp, 'type': offer.type},
       });
+
       _currentPartnerId = partnerId;
     } catch (e) {
       emit(VideoError('Failed to create or send offer: $e'));
@@ -266,6 +317,8 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
       _peerConnection = await createPeerConnectionUseCase.execute(
         event.localStream,
       );
+
+      // Listen for new ICE candidates and send them via signaling
       _peerConnection!.onIceCandidate = (candidate) {
         if (candidate != null) {
           repository.sendIceCandidate({
@@ -277,15 +330,31 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
           });
         }
       };
+
+      // Listen for remote media streams
       _peerConnection!.onTrack = (event) {
         if (event.streams.isNotEmpty) {
           _remoteStream = event.streams[0];
           emit(VideoRemoteStreamUpdated(_remoteStream));
         }
       };
+
       emit(VideoPeerConnectionReady(_peerConnection!));
     } catch (e) {
       emit(VideoError('Failed to create peer connection: $e'));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _offerSub.cancel();
+    _answerSub.cancel();
+    _iceCandidateSub.cancel();
+    _callEndedSub.cancel();
+    _waitSub.cancel();
+    _selfLoopSub.cancel();
+    _matchFoundSub.cancel();
+    _onlineUserSub.cancel();
+    return super.close();
   }
 }

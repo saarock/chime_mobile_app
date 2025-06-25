@@ -16,8 +16,8 @@ class VideoCallView extends StatefulWidget {
 }
 
 class _VideoCallViewState extends State<VideoCallView> {
-  RTCVideoRenderer _localRenderer = RTCVideoRenderer();
-  RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
+  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
+  final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
 
   @override
   void initState() {
@@ -89,27 +89,89 @@ class _VideoCallViewState extends State<VideoCallView> {
 
             return Column(
               children: [
-                Container(
+                Padding(
                   padding: const EdgeInsets.all(16),
-                  alignment: Alignment.center,
                   child: Text(
                     statusMessage,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    style: const TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                 ),
 
-                // Video Stream Area
+                // Video Area
                 Expanded(
                   child: Stack(
                     children: [
-                      // Remote Stream
-                      RTCVideoView(
-                        _remoteRenderer,
-                        objectFit:
-                            RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
+                      // Remote Video or Fallback
+                      Positioned.fill(
+                        child:
+                            _remoteRenderer.srcObject == null
+                                ? Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 24.0,
+                                        ),
+                                        child: Text(
+                                          "✨ Ready to connect with someone?\nTap below to start a random call!",
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 20,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          final loginState =
+                                              context
+                                                  .read<LoginViewModel>()
+                                                  .state;
+                                          final user = loginState.userApiModel;
+                                          if (user == null) {
+                                            return showMySnackBar(
+                                              context: context,
+                                              message: "User not found",
+                                            );
+                                          }
+
+                                          context.read<VideoBloc>().add(
+                                            StartRandomCall(
+                                              userDetails: user.toJson(),
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(Icons.videocam),
+                                        label: const Text("Start Random Call"),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              Colors.tealAccent.shade700,
+                                          foregroundColor: Colors.black,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 32,
+                                            vertical: 14,
+                                          ),
+                                          textStyle: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                                : RTCVideoView(
+                                  _remoteRenderer,
+                                  objectFit:
+                                      RTCVideoViewObjectFit
+                                          .RTCVideoViewObjectFitCover,
+                                ),
                       ),
 
-                      // Local Stream (Overlayed bottom-right)
+                      // Local Video overlayed
                       Positioned(
                         right: 16,
                         bottom: 16,
@@ -127,7 +189,7 @@ class _VideoCallViewState extends State<VideoCallView> {
                   ),
                 ),
 
-                // Control Buttons
+                // Buttons
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -139,9 +201,9 @@ class _VideoCallViewState extends State<VideoCallView> {
                         onPressed: () {
                           final loginState =
                               context.read<LoginViewModel>().state;
-                          final userApiModel = loginState.userApiModel;
+                          final user = loginState.userApiModel;
 
-                          if (userApiModel == null) {
+                          if (user == null) {
                             showMySnackBar(
                               context: context,
                               message: "User details not found",
@@ -149,9 +211,8 @@ class _VideoCallViewState extends State<VideoCallView> {
                             return;
                           }
 
-                          final userDetails = userApiModel.toJson();
                           context.read<VideoBloc>().add(
-                            StartRandomCall(userDetails: userDetails),
+                            StartRandomCall(userDetails: user.toJson()),
                           );
                         },
                         icon: const Icon(Icons.shuffle),
@@ -168,30 +229,20 @@ class _VideoCallViewState extends State<VideoCallView> {
                       const SizedBox(height: 12),
                       ElevatedButton.icon(
                         onPressed: () {
-                          final loginState =
-                              context.read<LoginViewModel>().state;
-                          final userApiModel = loginState.userApiModel;
+                          final partnerId =
+                              context.read<VideoBloc>().currentPartnerId;
 
-                          if (userApiModel == null) {
+                          if (partnerId == null) {
                             showMySnackBar(
                               context: context,
-                              message: "User details not found",
+                              message: "No active partner to end call.",
                             );
                             return;
                           }
 
-                          final partnerId =
-                              context.read<VideoBloc>().currentPartnerId;
-                          if (partnerId != null) {
-                            context.read<VideoBloc>().add(
-                              EndCallEvent(partnerId),
-                            );
-                          } else {
-                            return showMySnackBar(
-                              context: context,
-                              message: "Partner id is  requried",
-                            );
-                          }
+                          context.read<VideoBloc>().add(
+                            EndCallEvent(partnerId),
+                          );
                         },
                         icon: const Icon(Icons.call_end),
                         label: const Text("End Call"),
