@@ -35,7 +35,7 @@ abstract class IVideoCallDataSource {
   // 4) WEBRTC UTILITIES
   // ───────────────────────────────────────────────
   Future<MediaStream> getLocalStream();
-  Future<RTCPeerConnection> createPeerConnection(MediaStream localStream);
+  Future<RTCPeerConnection> createPeerConnectionRemote(MediaStream localStream);
 
   // ───────────────────────────────────────────────
   // 5) CLEANUP

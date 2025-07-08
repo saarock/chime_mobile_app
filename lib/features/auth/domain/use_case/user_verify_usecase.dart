@@ -1,7 +1,7 @@
 import 'package:chime/app/use_case/usercase.dart';
 import 'package:chime/core/error/failure.dart';
 import 'package:chime/features/auth/data/model/user_api_model.dart';
-import 'package:chime/features/auth/domain/repository/student_repository.dart';
+import 'package:chime/features/auth/domain/repository/user_repository.dart';
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 

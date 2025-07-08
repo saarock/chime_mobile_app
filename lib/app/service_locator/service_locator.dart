@@ -2,7 +2,7 @@ import 'package:chime/core/network/api_service.dart';
 import 'package:chime/core/network/hive_service.dart';
 import 'package:chime/features/auth/data/data_source/remote_datasource/user_remote_datasource.dart';
 import 'package:chime/features/auth/data/repository/remote_repository/user_remote_repository.dart';
-import 'package:chime/features/auth/domain/repository/student_repository.dart';
+import 'package:chime/features/auth/domain/repository/user_repository.dart';
 import 'package:chime/features/auth/domain/use_case/user_login_with_google_usecase.dart';
 import 'package:chime/features/auth/domain/use_case/user_verify_usecase.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
@@ -11,6 +11,7 @@ import 'package:chime/features/home/presentation/view_model/home_view_model.dart
 import 'package:chime/features/splash/presentation/view_model/splash_view_model.dart';
 import 'package:chime/features/video-call/data/data_source/remote_datasource/video_call_datasource.dart';
 import 'package:chime/features/video-call/data/data_source/video_call_datasource.dart';
+import 'package:chime/features/video-call/data/repository/remote_repository/user_video_remote_repository.dart';
 import 'package:chime/features/video-call/domain/repository/video_call_repository.dart';
 import 'package:chime/features/video-call/domain/use_case/create_peer_connection_usecase.dart';
 import 'package:chime/features/video-call/domain/use_case/end_call_usecase.dart';
@@ -170,7 +171,6 @@ Future<void> _initAuthModule() async {
     () => LoginViewModel(
       serviceLocator<UserLoginWithGoogleUsecase>(),
       serviceLocator<UserVerifyUsecase>(),
-      serviceLocator<IUserRepository>(),
     ),
   );
 

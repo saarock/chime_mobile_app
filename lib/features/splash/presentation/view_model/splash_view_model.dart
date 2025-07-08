@@ -8,7 +8,6 @@ class SplashViewModel extends Cubit<void> {
   SplashViewModel(this._loginViewModel) : super(null);
 
   Future<void> init(BuildContext context) async {
-    await Future.delayed(const Duration(seconds: 2));
     await _loginViewModel.verifyUser(context);
   }
 }

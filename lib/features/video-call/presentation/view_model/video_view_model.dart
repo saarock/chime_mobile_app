@@ -308,21 +308,22 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     Emitter<VideoState> emit,
   ) async {
     try {
+      print(
+        "Ok now the peer connection is running.............................................",
+      );
       _peerConnection = await createPeerConnectionUseCase.execute(
         event.localStream,
       );
 
       // Listen for new ICE candidates and send them via signaling
       _peerConnection!.onIceCandidate = (candidate) {
-        if (candidate != null) {
-          repository.sendIceCandidate({
-            'candidate': {
-              'candidate': candidate.candidate,
-              'sdpMid': candidate.sdpMid,
-              'sdpMLineIndex': candidate.sdpMLineIndex,
-            },
-          });
-        }
+        repository.sendIceCandidate({
+          'candidate': {
+            'candidate': candidate.candidate,
+            'sdpMid': candidate.sdpMid,
+            'sdpMLineIndex': candidate.sdpMLineIndex,
+          },
+        });
       };
 
       // Listen for remote media streams

@@ -46,17 +46,34 @@ class UserRemoteDatasource implements IUserDataSource {
         final data = response.data;
         // Extract userData
         final userJson = data['data']['userData'];
-        // final String accessToken = data['data']['accessToken'];
-        // CookieCache.saveAccessToken(accessToken);
-        print("Hello AAYUSH This is the acess token");
-        print(userJson);
-        // print(accessToken);
         return UserApiModel.fromJson(userJson);
       } else {
         throw Exception("Anauthorized user");
       }
     } catch (error) {
       throw Exception("AuAuthorized Request: Failed to verify user");
+    }
+  }
+
+  @override
+  Future<UserApiModel> updateUserImportantDetails(
+    Map<String, dynamic> userDetails,
+  ) async {
+    try {
+      final response = await _apiService.dio.post(
+        ApiEndpoints
+            .updateUserImportantDetails, // add this endpoint to ApiEndpoints
+        data: userDetails,
+      );
+
+      if (response.statusCode == 200) {
+        final userJson = response.data['data']['userData'];
+        return UserApiModel.fromJson(userJson);
+      } else {
+        throw Exception("Failed to update user profile");
+      }
+    } catch (error) {
+      throw Exception("Error while updating user profile: $error");
     }
   }
 }

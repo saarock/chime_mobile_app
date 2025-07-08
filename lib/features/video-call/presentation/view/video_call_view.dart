@@ -7,6 +7,7 @@ import 'package:chime/features/video-call/presentation/view_model/video_state.da
 import 'package:chime/app/shared_pref/cooki_cache.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
 import 'package:chime/core/common/my_snackbar.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class VideoCallView extends StatefulWidget {
   const VideoCallView({super.key});
@@ -22,9 +23,32 @@ class _VideoCallViewState extends State<VideoCallView> {
   @override
   void initState() {
     super.initState();
-    _initRenderers();
-    _initSocketConnection();
-    context.read<VideoBloc>().add(LoadLocalStreamEvent());
+    _requestPermissionsAndInit();
+  }
+
+  Future<void> _requestPermissionsAndInit() async {
+    final statuses = await [Permission.camera, Permission.microphone].request();
+
+    final cameraGranted = statuses[Permission.camera]!.isGranted;
+    final micGranted = statuses[Permission.microphone]!.isGranted;
+
+    if (cameraGranted && micGranted) {
+      await _initRenderers();
+      await _initSocketConnection();
+      context.read<VideoBloc>().add(LoadLocalStreamEvent());
+    } else {
+      if (!mounted) return;
+      showMySnackBar(
+        context: context,
+        message: "Camera and microphone permissions are required.",
+      );
+
+      // Optional: Open settings if permanently denied
+      if (await Permission.camera.isPermanentlyDenied ||
+          await Permission.microphone.isPermanentlyDenied) {
+        await openAppSettings();
+      }
+    }
   }
 
   Future<void> _initRenderers() async {
@@ -76,6 +100,8 @@ class _VideoCallViewState extends State<VideoCallView> {
               statusMessage = "🔄 Connecting to socket...";
             } else if (state is VideoConnected) {
               statusMessage = "✅ Connected to server";
+            } else if (state is VideoLocalStreamLoaded) {
+              statusMessage = "📷 Camera ready. Waiting...";
             } else if (state is VideoWaitingForMatch) {
               statusMessage = "⌛ Waiting for a match...";
             } else if (state is VideoMatchFound) {
@@ -146,10 +172,12 @@ class _VideoCallViewState extends State<VideoCallView> {
                                                   .state;
                                           final user = loginState.userApiModel;
                                           if (user == null) {
-                                            return showMySnackBar(
+                                            showMySnackBar(
                                               context: context,
-                                              message: "User not found",
+                                              message:
+                                                  "Something went wrong. Pleased logout and login again or try later.",
                                             );
+                                            return;
                                           }
                                           context.read<VideoBloc>().add(
                                             StartRandomCall(

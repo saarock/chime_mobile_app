@@ -138,16 +138,19 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
   }
 
   @override
-  Future<RTCPeerConnection> createPeerConnection(
+  Future<RTCPeerConnection> createPeerConnectionRemote(
     MediaStream localStream,
   ) async {
-    final config = {
-      'iceServers': [
+    print("Connecting to ICE server...");
+
+    final Map<String, dynamic> config = {
+      "iceServers": [
         {'urls': 'stun:stun.l.google.com:19302'},
       ],
     };
 
-    final pc = await createPeerConnection(config as MediaStream);
+    // ✅ Call the actual flutter_webrtc function directly
+    final pc = await createPeerConnection(config); // Don't shadow this name
 
     localStream.getTracks().forEach((track) {
       pc.addTrack(track, localStream);

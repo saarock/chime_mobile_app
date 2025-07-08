@@ -1,6 +1,6 @@
 import 'package:chime/app/service_locator/service_locator.dart';
 import 'package:chime/features/auth/data/data_source/local_datasource/user_local_datasource.dart';
-import 'package:chime/features/auth/domain/repository/student_repository.dart';
+import 'package:chime/features/auth/data/model/user_api_model.dart';
 import 'package:chime/features/auth/domain/use_case/user_login_with_google_usecase.dart';
 import 'package:chime/features/auth/domain/use_case/user_verify_usecase.dart';
 import 'package:chime/features/auth/presentation/view/login_view.dart';
@@ -16,17 +16,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class LoginViewModel extends Bloc<LoginEvent, LoginState> {
   final UserLoginWithGoogleUsecase _userLoginWithGoogleUsecase;
   final UserVerifyUsecase _userVerifyUsecase; // Use this to verify user
-  final IUserRepository
-  _userRepository; // You referenced _userRepository in verifyUser but never defined it here
 
-  LoginViewModel(
-    this._userLoginWithGoogleUsecase,
-    this._userVerifyUsecase,
-    this._userRepository, // Inject repository here if you want to call verifyUser directly
-  ) : super(LoginState.initial()) {
+  LoginViewModel(this._userLoginWithGoogleUsecase, this._userVerifyUsecase)
+    : super(LoginState.initial()) {
     on<NavigateToRegisterViewEvent>(_onNavigateToRegisterView);
     on<LoginWithGoogle>(_loginWithGoogle);
     on<NavigateToHomeEvent>(_onNavigateToHomeView);
+  }
+
+  void updateUser(UserApiModel updatedUser) {
+    // ignore: invalid_use_of_visible_for_testing_member
+    emit(state.copyWith(userApiModel: updatedUser));
   }
 
   // Navigate to register page
@@ -126,6 +126,7 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
         print(userData);
         // Cache user locally
         await UserLocalDatasource().cacheUser(userData);
+        // ignore: invalid_use_of_visible_for_testing_member
         emit(
           state.copyWith(
             isLoading: false,
