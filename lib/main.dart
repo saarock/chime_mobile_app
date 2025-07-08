@@ -8,7 +8,7 @@ import 'package:chime/features/video-call/presentation/view_model/video_view_mod
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-//Main entry point of the Chime App
+// Main entry point of the Chime App
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initDependencies();
@@ -18,7 +18,7 @@ void main() async {
         BlocProvider(create: (_) => serviceLocator<LoginViewModel>()),
         BlocProvider(create: (_) => serviceLocator<RegsiterViewModel>()),
         BlocProvider(create: (_) => serviceLocator<HomeViewModel>()),
-        BlocProvider(create: (_) => serviceLocator<VideoCubit>()),
+        BlocProvider(create: (_) => serviceLocator<VideoBloc>()),
       ],
       child: const App(),
     ),

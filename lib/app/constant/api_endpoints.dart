@@ -17,4 +17,5 @@ class ApiEndpoints {
 
   // Auth url
   static const String login = "/login-with-google";
+  static const updateUserImportantDetails = "/add-user-important-details";
 }

@@ -1,81 +1,125 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:chime/features/auth/presentation/view_model/login_view_model/login_state.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
+import 'package:chime/features/profile/presentation/view_model/profile_event.dart';
+import 'package:chime/features/profile/presentation/view_model/profile_state.dart';
+import 'package:chime/features/profile/presentation/view_model/profile_view_model.dart';
 
-class ProfileView extends StatelessWidget {
+class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
 
   @override
+  State<ProfileView> createState() => _ProfileViewState();
+}
+
+class _ProfileViewState extends State<ProfileView> {
+  final _formKey = GlobalKey<FormState>();
+
+  late TextEditingController userNameCtrl;
+  late TextEditingController ageCtrl;
+  late TextEditingController phoneCtrl;
+  late TextEditingController countryCtrl;
+
+  String? gender;
+  String? status;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = context.read<LoginViewModel>().state.userApiModel!;
+    userNameCtrl = TextEditingController(text: user.userName);
+    ageCtrl = TextEditingController(text: user.age?.toString());
+    phoneCtrl = TextEditingController(text: user.phoneNumber);
+    countryCtrl = TextEditingController(text: user.country);
+    gender = user.gender?.name;
+    status = user.relationShipStatus;
+  }
+
+  @override
+  void dispose() {
+    userNameCtrl.dispose();
+    ageCtrl.dispose();
+    phoneCtrl.dispose();
+    countryCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final user = context.watch<LoginViewModel>().state.userApiModel;
+
+    if (user == null) {
+      return const Center(child: Text("No user data found."));
+    }
+
     return Scaffold(
-      backgroundColor: Colors.transparent, // No background color
-      body: BlocBuilder<LoginViewModel, LoginState>(
-        builder: (context, state) {
-          final user = state.userApiModel;
+      appBar: AppBar(title: const Text("Edit Profile")),
+      body: BlocConsumer<ProfileBloc, ProfileState>(
+        listener: (context, state) {
+          if (state is ProfileSuccess) {
+            // ✅ Update LoginViewModel with new user info
+            context.read<LoginViewModel>().updateUser(state.user);
 
-          if (user == null) {
-            return const Center(
-              child: Text(
-                "No user data found.",
-                style: TextStyle(fontSize: 18),
-              ),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Profile updated successfully!")),
             );
+          } else if (state is ProfileFailure) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
-
+        },
+        builder: (context, state) {
           return SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Column(
-                children: [
-                  Center(
-                    child: Hero(
-                      tag: 'profile-image',
-                      child: CircleAvatar(
-                        radius: 60,
-                        backgroundImage:
-                            user.profilePicture != null
-                                ? NetworkImage(user.profilePicture!)
-                                : null,
-                        backgroundColor: Colors.white.withOpacity(0.3),
-                        child:
-                            user.profilePicture == null
-                                ? const Icon(
-                                  Icons.person,
-                                  size: 60,
-                                  color: Colors.white,
-                                )
-                                : null,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    user.fullName,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    user.email,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 30),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _editableTextField("Username", userNameCtrl),
+                    _editableTextField("Age", ageCtrl, isNumber: true),
+                    _editableTextField("Phone Number", phoneCtrl),
+                    _editableTextField("Country", countryCtrl),
 
-                  // Info Cards
-                  _glassInfoCard("Username", user.userName ?? "-"),
-                  _glassInfoCard("Country", user.country ?? "-"),
-                  _glassInfoCard("Gender", user.gender?.name ?? "-"),
-                  _glassInfoCard("Age", user.age?.toString() ?? "-"),
-                  _glassInfoCard("Status", user.relationShipStatus ?? "-"),
-                  _glassInfoCard("Role", user.role),
-                  _glassInfoCard("Active", user.active ? "Yes" : "No"),
-                ],
+                    _dropdownField("Gender", gender, [
+                      "Male",
+                      "Female",
+                      "Other",
+                    ], (val) => setState(() => gender = val)),
+                    _dropdownField("Status", status, [
+                      "Single",
+                      "Married",
+                      "Complicated",
+                    ], (val) => setState(() => status = val)),
+
+                    const SizedBox(height: 30),
+                    ElevatedButton(
+                      onPressed:
+                          state is ProfileLoading
+                              ? null
+                              : () {
+                                if (_formKey.currentState!.validate()) {
+                                  context.read<ProfileBloc>().add(
+                                    SubmitProfileEvent(
+                                      userId: user.id!,
+                                      userName: userNameCtrl.text,
+                                      age: ageCtrl.text,
+                                      phoneNumber: phoneCtrl.text,
+                                      country: countryCtrl.text,
+                                      gender: gender,
+                                      relationshipStatus: status,
+                                    ),
+                                  );
+                                }
+                              },
+                      child:
+                          state is ProfileLoading
+                              ? const CircularProgressIndicator()
+                              : const Text("Save Changes"),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -84,50 +128,49 @@ class ProfileView extends StatelessWidget {
     );
   }
 
-  /// Clean Glassmorphism Info Card
-  Widget _glassInfoCard(String title, String value) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.15),
-            Colors.white.withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _editableTextField(
+    String label,
+    TextEditingController controller, {
+    bool isNumber = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
         ),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return "$label cannot be empty";
+          }
+          return null;
+        },
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.black54,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
+    );
+  }
+
+  Widget _dropdownField(
+    String label,
+    String? value,
+    List<String> options,
+    Function(String?) onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+        items:
+            options.map((e) {
+              return DropdownMenuItem(value: e, child: Text(e));
+            }).toList(),
       ),
     );
   }

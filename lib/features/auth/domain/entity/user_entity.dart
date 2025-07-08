@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-enum Gender { male, female, other }
+// ignore: constant_identifier_names
+enum Gender { Male, Female, Other }
 
 enum RelationshipStatus { single, mingle, notInterest }
 

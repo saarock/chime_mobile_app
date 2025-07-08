@@ -8,4 +8,14 @@ abstract interface class IUserRepository {
     String clientId,
   );
   Future<Either<Failure, UserApiModel>> verifyUser();
+
+  Future<Either<Failure, UserApiModel>> updateUserProfileInfo({
+    required String userId,
+    String? age,
+    String? userName,
+    String? phoneNumber,
+    String? country,
+    String? gender,
+    String? relationshipStatus,
+  });
 }
