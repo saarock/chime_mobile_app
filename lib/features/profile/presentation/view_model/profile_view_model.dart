@@ -27,6 +27,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         country: event.country,
         gender: event.gender,
         relationshipStatus: event.relationshipStatus,
+        existingUser: event.existingUser, // ✅ used for partial update
       ),
     );
 

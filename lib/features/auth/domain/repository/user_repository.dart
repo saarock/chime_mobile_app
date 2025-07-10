@@ -11,6 +11,7 @@ abstract interface class IUserRepository {
 
   Future<Either<Failure, UserApiModel>> updateUserProfileInfo({
     required String userId,
+    required UserApiModel existingUser,
     String? age,
     String? userName,
     String? phoneNumber,

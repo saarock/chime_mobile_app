@@ -21,7 +21,7 @@ class UserApiModel extends Equatable {
 
   final Gender? gender;
 
-  @JsonKey(name: 'relationShipStatus')
+  @JsonKey(name: 'relationshipStatus')
   final String? relationShipStatus;
 
   final bool active;
@@ -54,6 +54,43 @@ class UserApiModel extends Equatable {
 
   factory UserApiModel.fromJson(Map<String, dynamic> json) =>
       _$UserApiModelFromJson(json);
+
+  // Add copyWith method
+  UserApiModel copyWith({
+    String? id,
+    String? fullName,
+    String? userName,
+    String? email,
+    String? phoneNumber,
+    String? profilePicture,
+    int? age,
+    Gender? gender,
+    String? relationShipStatus,
+    bool? active,
+    String? country,
+    String? role,
+    int? v,
+    String? createdAt,
+    String? updatedAt,
+  }) {
+    return UserApiModel(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      userName: userName ?? this.userName,
+      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      profilePicture: profilePicture ?? this.profilePicture,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+      relationShipStatus: relationShipStatus ?? this.relationShipStatus,
+      active: active ?? this.active,
+      country: country ?? this.country,
+      role: role ?? this.role,
+      v: v ?? this.v,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   Map<String, dynamic> toJson() => _$UserApiModelToJson(this);
 

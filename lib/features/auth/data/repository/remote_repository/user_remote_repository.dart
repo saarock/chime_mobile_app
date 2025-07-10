@@ -48,6 +48,7 @@ class UserRemoteRepository implements IUserRepository {
   @override
   Future<Either<Failure, UserApiModel>> updateUserProfileInfo({
     required String userId,
+    required UserApiModel existingUser,
     String? age,
     String? userName,
     String? phoneNumber,
@@ -68,6 +69,7 @@ class UserRemoteRepository implements IUserRepository {
 
       final response = await _userRemoteDatasource.updateUserImportantDetails(
         body,
+        existingUser,
       );
 
       return Right(response);

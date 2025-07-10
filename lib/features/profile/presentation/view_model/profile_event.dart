@@ -1,11 +1,13 @@
 import 'package:equatable/equatable.dart';
+import 'package:chime/features/auth/data/model/user_api_model.dart';
 
-class ProfileEvent extends Equatable {
+abstract class ProfileEvent extends Equatable {
+  const ProfileEvent();
+
   @override
   List<Object?> get props => [];
 }
 
-/// Triggered when user submits profile update
 class SubmitProfileEvent extends ProfileEvent {
   final String userId;
   final String? age;
@@ -14,8 +16,9 @@ class SubmitProfileEvent extends ProfileEvent {
   final String? country;
   final String? gender;
   final String? relationshipStatus;
+  final UserApiModel existingUser;
 
-  SubmitProfileEvent({
+  const SubmitProfileEvent({
     required this.userId,
     this.age,
     this.userName,
@@ -23,6 +26,7 @@ class SubmitProfileEvent extends ProfileEvent {
     this.country,
     this.gender,
     this.relationshipStatus,
+    required this.existingUser,
   });
 
   @override
@@ -34,5 +38,6 @@ class SubmitProfileEvent extends ProfileEvent {
     country,
     gender,
     relationshipStatus,
+    existingUser,
   ];
 }
