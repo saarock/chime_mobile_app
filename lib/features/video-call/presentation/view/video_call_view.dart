@@ -95,7 +95,7 @@ class _VideoCallViewState extends State<VideoCallView> {
           builder: (context, state) {
             final onlineCount = context.watch<VideoBloc>().onlineUserCount;
 
-            String statusMessage = "🔌 Not connected";
+            String statusMessage = "";
             if (state is VideoConnecting) {
               statusMessage = "🔄 Connecting to socket...";
             } else if (state is VideoConnected) {
