@@ -15,10 +15,10 @@ class ProfileView extends StatefulWidget {
 class _ProfileViewState extends State<ProfileView> {
   final _formKey = GlobalKey<FormState>();
 
-  late TextEditingController userNameCtrl;
-  late TextEditingController ageCtrl;
-  late TextEditingController phoneCtrl;
-  late TextEditingController countryCtrl;
+  late final TextEditingController userNameCtrl;
+  late final TextEditingController ageCtrl;
+  late final TextEditingController phoneCtrl;
+  late final TextEditingController countryCtrl;
 
   String? gender;
   String? status;
@@ -57,19 +57,22 @@ class _ProfileViewState extends State<ProfileView> {
       body: BlocConsumer<ProfileBloc, ProfileState>(
         listener: (context, state) {
           if (state is ProfileSuccess) {
-            // ✅ Update LoginViewModel with new user info
+            // Update LoginViewModel with new user info
             context.read<LoginViewModel>().updateUser(state.user);
 
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Profile updated successfully!")),
             );
           } else if (state is ProfileFailure) {
+            print(state.message);
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         builder: (context, state) {
+          final isLoading = state is ProfileLoading;
+
           return SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
@@ -77,46 +80,57 @@ class _ProfileViewState extends State<ProfileView> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    _editableTextField("Username", userNameCtrl),
-                    _editableTextField("Age", ageCtrl, isNumber: true),
-                    _editableTextField("Phone Number", phoneCtrl),
-                    _editableTextField("Country", countryCtrl),
+                    _buildEditableTextField("Username", userNameCtrl),
+                    _buildEditableTextField("Age", ageCtrl, isNumber: true),
+                    _buildEditableTextField("Phone Number", phoneCtrl),
+                    _buildEditableTextField("Country", countryCtrl),
 
-                    _dropdownField("Gender", gender, [
+                    _buildDropdownField("Gender", gender, const [
                       "Male",
                       "Female",
                       "Other",
                     ], (val) => setState(() => gender = val)),
-                    _dropdownField("Status", status, [
+                    _buildDropdownField("Status", status, const [
                       "Single",
                       "Married",
                       "Complicated",
                     ], (val) => setState(() => status = val)),
 
                     const SizedBox(height: 30),
-                    ElevatedButton(
-                      onPressed:
-                          state is ProfileLoading
-                              ? null
-                              : () {
-                                if (_formKey.currentState!.validate()) {
-                                  context.read<ProfileBloc>().add(
-                                    SubmitProfileEvent(
-                                      userId: user.id!,
-                                      userName: userNameCtrl.text,
-                                      age: ageCtrl.text,
-                                      phoneNumber: phoneCtrl.text,
-                                      country: countryCtrl.text,
-                                      gender: gender,
-                                      relationshipStatus: status,
-                                    ),
-                                  );
-                                }
-                              },
-                      child:
-                          state is ProfileLoading
-                              ? const CircularProgressIndicator()
-                              : const Text("Save Changes"),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed:
+                            isLoading
+                                ? null
+                                : () {
+                                  if (_formKey.currentState!.validate()) {
+                                    context.read<ProfileBloc>().add(
+                                      SubmitProfileEvent(
+                                        userId: user.id!,
+                                        userName: userNameCtrl.text.trim(),
+                                        age: ageCtrl.text.trim(),
+                                        phoneNumber: phoneCtrl.text.trim(),
+                                        country: countryCtrl.text.trim(),
+                                        gender: gender,
+                                        relationshipStatus: status,
+                                        existingUser:
+                                            user, // Important for merging
+                                      ),
+                                    );
+                                  }
+                                },
+                        child:
+                            isLoading
+                                ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                                : const Text(
+                                  "Save Changes",
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                      ),
                     ),
                   ],
                 ),
@@ -128,7 +142,7 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
-  Widget _editableTextField(
+  Widget _buildEditableTextField(
     String label,
     TextEditingController controller, {
     bool isNumber = false,
@@ -152,11 +166,11 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
-  Widget _dropdownField(
+  Widget _buildDropdownField(
     String label,
     String? value,
     List<String> options,
-    Function(String?) onChanged,
+    void Function(String?) onChanged,
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -168,9 +182,9 @@ class _ProfileViewState extends State<ProfileView> {
           border: const OutlineInputBorder(),
         ),
         items:
-            options.map((e) {
-              return DropdownMenuItem(value: e, child: Text(e));
-            }).toList(),
+            options
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .toList(),
       ),
     );
   }

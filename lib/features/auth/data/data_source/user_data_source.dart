@@ -11,5 +11,6 @@ abstract interface class IUserDataSource {
   /// Update user profile with important details
   Future<UserApiModel> updateUserImportantDetails(
     Map<String, dynamic> userDetails,
+    UserApiModel existingUser,
   );
 }

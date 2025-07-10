@@ -58,21 +58,39 @@ class UserRemoteDatasource implements IUserDataSource {
   @override
   Future<UserApiModel> updateUserImportantDetails(
     Map<String, dynamic> userDetails,
+    UserApiModel existingUser,
   ) async {
     try {
       final response = await _apiService.dio.post(
-        ApiEndpoints
-            .updateUserImportantDetails, // add this endpoint to ApiEndpoints
+        ApiEndpoints.updateUserImportantDetails,
         data: userDetails,
       );
 
       if (response.statusCode == 200) {
-        final userJson = response.data['data']['userData'];
-        return UserApiModel.fromJson(userJson);
+        final partialUserJson = response.data['data'];
+
+        // Create a partial UserApiModel from partial JSON
+        final partialUser = UserApiModel.fromJson(partialUserJson);
+
+        // Merge with existing user to produce a complete UserApiModel
+        final mergedUser = existingUser.copyWith(
+          id: partialUser.id,
+          userName: partialUser.userName,
+          age: partialUser.age,
+          phoneNumber: partialUser.phoneNumber,
+          country: partialUser.country,
+          gender: partialUser.gender,
+          relationShipStatus: partialUser.relationShipStatus,
+          // other fields if sent by backend...
+        );
+        return mergedUser;
       } else {
         throw Exception("Failed to update user profile");
       }
     } catch (error) {
+      print("This is the error ");
+      print(error);
+
       throw Exception("Error while updating user profile: $error");
     }
   }

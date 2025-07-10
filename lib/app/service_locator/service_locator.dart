@@ -3,11 +3,13 @@ import 'package:chime/core/network/hive_service.dart';
 import 'package:chime/features/auth/data/data_source/remote_datasource/user_remote_datasource.dart';
 import 'package:chime/features/auth/data/repository/remote_repository/user_remote_repository.dart';
 import 'package:chime/features/auth/domain/repository/user_repository.dart';
+import 'package:chime/features/auth/domain/use_case/update_user_info.usecase.dart';
 import 'package:chime/features/auth/domain/use_case/user_login_with_google_usecase.dart';
 import 'package:chime/features/auth/domain/use_case/user_verify_usecase.dart';
 import 'package:chime/features/auth/presentation/view_model/login_view_model/login_view_model.dart';
 import 'package:chime/features/auth/presentation/view_model/register_view_model/regsiter_view_model.dart';
 import 'package:chime/features/home/presentation/view_model/home_view_model.dart';
+import 'package:chime/features/profile/presentation/view_model/profile_view_model.dart';
 import 'package:chime/features/splash/presentation/view_model/splash_view_model.dart';
 import 'package:chime/features/video-call/data/data_source/remote_datasource/video_call_datasource.dart';
 import 'package:chime/features/video-call/data/data_source/video_call_datasource.dart';
@@ -53,7 +55,30 @@ Future<void> _initHomeModule() async {
 }
 
 // Profile
-Future<void> _initProfileModule() async {}
+Future<void> _initProfileModule() async {
+  // Make sure the IUserRepository is already registered in _initAuthModule
+  if (!serviceLocator.isRegistered<IUserRepository>()) {
+    throw Exception(
+      "IUserRepository is not registered. Please check _initAuthModule.",
+    );
+  }
+
+  // Register the use case: UpdateUserInfoUseCase
+  if (!serviceLocator.isRegistered<UpdateUserInfoUseCase>()) {
+    serviceLocator.registerLazySingleton<UpdateUserInfoUseCase>(
+      () => UpdateUserInfoUseCase(
+        userRepository: serviceLocator<IUserRepository>(),
+      ),
+    );
+  }
+
+  // Register the ProfileBloc
+  serviceLocator.registerFactory<ProfileBloc>(
+    () => ProfileBloc(
+      updateUserInfoUseCase: serviceLocator<UpdateUserInfoUseCase>(),
+    ),
+  );
+}
 
 // Video (register your VideoBloc here here)
 Future<void> _initVideoModule() async {
