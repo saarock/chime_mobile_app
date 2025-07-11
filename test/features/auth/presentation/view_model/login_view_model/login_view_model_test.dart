@@ -11,19 +11,51 @@ import 'package:chime/features/auth/domain/use_case/user_login_with_google_useca
 import 'package:chime/features/auth/domain/use_case/user_verify_usecase.dart';
 import 'package:chime/features/auth/data/model/user_api_model.dart';
 import 'package:chime/core/error/failure.dart';
+import 'package:chime/features/auth/data/data_source/local_datasource/user_local_datasource.dart';
 
-/// Fake context since real BuildContext isn't needed in logic-only tests.
-class FakeBuildContext extends Fake implements BuildContext {}
+/// ----------------- Fakes -----------------
+class FakeLoginParams extends Fake implements LoginParams {}
 
-/// Mocks for use cases
+class FakeUserApiModel extends Fake implements UserApiModel {}
+
+/// ----------------- Mock BuildContext with `.mounted` -----------------
+class MockBuildContext extends Mock implements BuildContext {
+  @override
+  bool get mounted => true;
+}
+
+/// ----------------- Mocks -----------------
 class MockUserLoginWithGoogleUsecase extends Mock
     implements UserLoginWithGoogleUsecase {}
 
 class MockUserVerifyUsecase extends Mock implements UserVerifyUsecase {}
 
+class MockUserLocalDatasource extends Mock implements UserLocalDatasource {}
+
+/// ----------------- Testable ViewModel -----------------
+class TestableLoginViewModel extends LoginViewModel {
+  final UserLocalDatasource mockLocalDatasource;
+
+  TestableLoginViewModel(
+    UserLoginWithGoogleUsecase loginUsecase,
+    UserVerifyUsecase verifyUsecase,
+    this.mockLocalDatasource,
+  ) : super(
+        loginUsecase,
+        verifyUsecase,
+        shouldNavigate: false, // disable navigation in tests
+      );
+
+  @override
+  Future<void> cacheUser(UserApiModel userData) async {
+    await mockLocalDatasource.cacheUser(userData);
+  }
+}
+
 void main() {
   late MockUserLoginWithGoogleUsecase mockLoginUsecase;
   late MockUserVerifyUsecase mockVerifyUsecase;
+  late MockUserLocalDatasource mockLocalDatasource;
 
   const user = UserApiModel(
     id: 'u1',
@@ -37,13 +69,24 @@ void main() {
   );
 
   setUpAll(() {
-    registerFallbackValue(FakeBuildContext());
+    registerFallbackValue(MockBuildContext());
+    registerFallbackValue(FakeLoginParams());
+    registerFallbackValue(FakeUserApiModel());
   });
 
   setUp(() {
     mockLoginUsecase = MockUserLoginWithGoogleUsecase();
     mockVerifyUsecase = MockUserVerifyUsecase();
+    mockLocalDatasource = MockUserLocalDatasource();
   });
+
+  TestableLoginViewModel createViewModel() {
+    return TestableLoginViewModel(
+      mockLoginUsecase,
+      mockVerifyUsecase,
+      mockLocalDatasource,
+    );
+  }
 
   blocTest<LoginViewModel, LoginState>(
     'emits [loading, success] when LoginWithGoogle succeeds',
@@ -51,17 +94,21 @@ void main() {
       when(
         () => mockLoginUsecase(any()),
       ).thenAnswer((_) async => const Right(user));
-      return LoginViewModel(mockLoginUsecase, mockVerifyUsecase);
+
+      when(
+        () => mockLocalDatasource.cacheUser(any()),
+      ).thenAnswer((_) async => Future.value());
+
+      return createViewModel();
     },
-    act: (bloc) {
-      bloc.add(
-        LoginWithGoogle(
-          credential: 'valid_credential',
-          clientId: 'mock_client_id',
-          context: FakeBuildContext(),
+    act:
+        (bloc) => bloc.add(
+          LoginWithGoogle(
+            credential: 'valid_credential',
+            clientId: 'mock_client_id',
+            context: MockBuildContext(),
+          ),
         ),
-      );
-    },
     wait: const Duration(milliseconds: 100),
     expect:
         () => [
@@ -74,6 +121,7 @@ void main() {
         ],
     verify: (_) {
       verify(() => mockLoginUsecase(any())).called(1);
+      verify(() => mockLocalDatasource.cacheUser(user)).called(1);
     },
   );
 
@@ -85,14 +133,14 @@ void main() {
           ApiFailure(message: 'Invalid credentials', statusCode: 401),
         ),
       );
-      return LoginViewModel(mockLoginUsecase, mockVerifyUsecase);
+      return createViewModel();
     },
     act:
         (bloc) => bloc.add(
           LoginWithGoogle(
             credential: 'invalid_credential',
             clientId: 'mock_client_id',
-            context: FakeBuildContext(),
+            context: MockBuildContext(),
           ),
         ),
     wait: const Duration(milliseconds: 100),
@@ -103,6 +151,7 @@ void main() {
         ],
     verify: (_) {
       verify(() => mockLoginUsecase(any())).called(1);
+      verifyNever(() => mockLocalDatasource.cacheUser(any()));
     },
   );
 }

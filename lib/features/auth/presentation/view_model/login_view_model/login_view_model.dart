@@ -15,25 +15,31 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoginViewModel extends Bloc<LoginEvent, LoginState> {
   final UserLoginWithGoogleUsecase _userLoginWithGoogleUsecase;
-  final UserVerifyUsecase _userVerifyUsecase; // Use this to verify user
+  final UserVerifyUsecase _userVerifyUsecase;
 
-  LoginViewModel(this._userLoginWithGoogleUsecase, this._userVerifyUsecase)
-    : super(LoginState.initial()) {
+  /// Flag to disable navigation during tests
+  final bool shouldNavigate;
+
+  LoginViewModel(
+    this._userLoginWithGoogleUsecase,
+    this._userVerifyUsecase, {
+    this.shouldNavigate = true,
+  }) : super(LoginState.initial()) {
     on<NavigateToRegisterViewEvent>(_onNavigateToRegisterView);
     on<LoginWithGoogle>(_loginWithGoogle);
     on<NavigateToHomeEvent>(_onNavigateToHomeView);
   }
 
   void updateUser(UserApiModel updatedUser) {
-    // ignore: invalid_use_of_visible_for_testing_member
     emit(state.copyWith(userApiModel: updatedUser));
   }
 
-  // Navigate to register page
   void _onNavigateToRegisterView(
     NavigateToRegisterViewEvent event,
     Emitter<LoginState> emit,
   ) {
+    if (!shouldNavigate) return;
+
     if (event.context.mounted) {
       Navigator.push(
         event.context,
@@ -52,7 +58,6 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
     }
   }
 
-  // Login with Google
   void _loginWithGoogle(LoginWithGoogle event, Emitter<LoginState> emit) async {
     emit(state.copyWith(isLoading: true, isSuccess: false));
 
@@ -65,8 +70,7 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
         emit(state.copyWith(isLoading: false, isSuccess: false));
       },
       (userData) async {
-        await UserLocalDatasource().cacheUser(userData);
-        print('Emitting logged in state with user: $userData');
+        await cacheUser(userData); // overrideable method
         emit(
           state.copyWith(
             isLoading: false,
@@ -74,25 +78,26 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
             userApiModel: userData,
           ),
         );
-        if (!emit.isDone) {
+        if (shouldNavigate && !emit.isDone) {
           add(NavigateToHomeEvent(context: event.context));
         }
       },
     );
   }
 
-  // Navigate to home
   void _onNavigateToHomeView(
     NavigateToHomeEvent event,
     Emitter<LoginState> emit,
   ) {
+    if (!shouldNavigate) return;
+
     if (event.context.mounted) {
       Navigator.pushAndRemoveUntil(
         event.context,
         MaterialPageRoute(
           builder:
               (context) => BlocProvider<HomeViewModel>(
-                create: (context) => HomeViewModel(loginViewModel: this),
+                create: (_) => HomeViewModel(loginViewModel: this),
                 child: const HomeView(),
               ),
         ),
@@ -101,13 +106,13 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
     }
   }
 
-  // Verify user using the usecase
   Future<void> verifyUser(BuildContext context) async {
     final result = await _userVerifyUsecase(const UserVerifyParams());
 
     await result.fold(
       (failure) async {
-        // Verification failed → go to Login screen
+        if (!shouldNavigate) return;
+
         if (context.mounted) {
           Navigator.pushReplacement(
             context,
@@ -122,10 +127,7 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
         }
       },
       (userData) async {
-        print("User verified:");
-        print(userData);
-        // Cache user locally
-        await UserLocalDatasource().cacheUser(userData);
+        await cacheUser(userData);
         // ignore: invalid_use_of_visible_for_testing_member
         emit(
           state.copyWith(
@@ -134,6 +136,7 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
             userApiModel: userData,
           ),
         );
+        if (!shouldNavigate) return;
 
         if (context.mounted) {
           Navigator.pushReplacement(
@@ -149,5 +152,10 @@ class LoginViewModel extends Bloc<LoginEvent, LoginState> {
         }
       },
     );
+  }
+
+  @protected
+  Future<void> cacheUser(UserApiModel userData) async {
+    await UserLocalDatasource().cacheUser(userData);
   }
 }
