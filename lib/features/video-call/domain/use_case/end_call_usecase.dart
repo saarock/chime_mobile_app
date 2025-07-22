@@ -5,7 +5,7 @@ class EndCallUseCase {
 
   EndCallUseCase(this.repository);
 
-  void execute(String partnerId) {
+  void execute(String? partnerId) {
     repository.endCall(partnerId);
   }
 }

@@ -61,7 +61,7 @@ class VideoCallRepositoryImpl implements IVideoCallRepository {
   }
 
   @override
-  void endCall(String partnerId) {
+  void endCall(String? partnerId) {
     dataSource.endCall(partnerId);
   }
 

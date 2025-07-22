@@ -21,7 +21,7 @@ class SendIceCandidateEvent extends VideoEvent {
 }
 
 class EndCallEvent extends VideoEvent {
-  final String partnerId;
+  final String? partnerId;
   EndCallEvent(this.partnerId);
 }
 

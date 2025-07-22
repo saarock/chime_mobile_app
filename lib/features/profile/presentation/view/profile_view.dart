@@ -23,6 +23,9 @@ class _ProfileViewState extends State<ProfileView> {
   String? gender;
   String? status;
 
+  final List<String> genderOptions = ['Male', 'Female', 'Other'];
+  final List<String> statusOptions = ['Single', 'Married', 'Complicated'];
+
   @override
   void initState() {
     super.initState();
@@ -31,8 +34,14 @@ class _ProfileViewState extends State<ProfileView> {
     ageCtrl = TextEditingController(text: user.age?.toString());
     phoneCtrl = TextEditingController(text: user.phoneNumber);
     countryCtrl = TextEditingController(text: user.country);
-    gender = user.gender?.name;
-    status = user.relationShipStatus;
+
+    // ✅ Prevent invalid values from crashing DropdownButton
+    gender =
+        genderOptions.contains(user.gender?.name) ? user.gender?.name : null;
+    status =
+        statusOptions.contains(user.relationShipStatus)
+            ? user.relationShipStatus
+            : null;
   }
 
   @override
@@ -57,14 +66,11 @@ class _ProfileViewState extends State<ProfileView> {
       body: BlocConsumer<ProfileBloc, ProfileState>(
         listener: (context, state) {
           if (state is ProfileSuccess) {
-            // Update LoginViewModel with new user info
             context.read<LoginViewModel>().updateUser(state.user);
-
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Profile updated successfully!")),
             );
           } else if (state is ProfileFailure) {
-            print(state.message);
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(state.message)));
@@ -85,16 +91,19 @@ class _ProfileViewState extends State<ProfileView> {
                     _buildEditableTextField("Phone Number", phoneCtrl),
                     _buildEditableTextField("Country", countryCtrl),
 
-                    _buildDropdownField("Gender", gender, const [
-                      "Male",
-                      "Female",
-                      "Other",
-                    ], (val) => setState(() => gender = val)),
-                    _buildDropdownField("Status", status, const [
-                      "Single",
-                      "Married",
-                      "Complicated",
-                    ], (val) => setState(() => status = val)),
+                    _buildDropdownField(
+                      "Gender",
+                      gender,
+                      genderOptions,
+                      (val) => setState(() => gender = val),
+                    ),
+
+                    _buildDropdownField(
+                      "Status",
+                      status,
+                      statusOptions,
+                      (val) => setState(() => status = val),
+                    ),
 
                     const SizedBox(height: 30),
                     SizedBox(
@@ -115,8 +124,7 @@ class _ProfileViewState extends State<ProfileView> {
                                         country: countryCtrl.text.trim(),
                                         gender: gender,
                                         relationshipStatus: status,
-                                        existingUser:
-                                            user, // Important for merging
+                                        existingUser: user,
                                       ),
                                     );
                                   }
@@ -168,14 +176,16 @@ class _ProfileViewState extends State<ProfileView> {
 
   Widget _buildDropdownField(
     String label,
-    String? value,
+    String? currentValue,
     List<String> options,
     void Function(String?) onChanged,
   ) {
+    final safeValue = options.contains(currentValue) ? currentValue : null;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
-        value: value,
+        value: safeValue,
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
@@ -183,8 +193,14 @@ class _ProfileViewState extends State<ProfileView> {
         ),
         items:
             options
-                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .map((e) => DropdownMenuItem<String>(value: e, child: Text(e)))
                 .toList(),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return "$label is required";
+          }
+          return null;
+        },
       ),
     );
   }
