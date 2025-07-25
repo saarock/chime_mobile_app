@@ -98,24 +98,6 @@ class _VideoCallViewState extends State<VideoCallView> {
     videoBloc.add(ConnectSocket(accessToken));
   }
 
-  // Start or restart the 6-second timer to auto-end call if no remote user connects
-  void _startNoRemoteUserTimer() {
-    // Cancel any previous timer
-    _noRemoteUserTimer?.cancel();
-
-    _noRemoteUserTimer = Timer(const Duration(seconds: 6), () {
-      if (!_remoteUserConnected) {
-        final partnerId = context.read<VideoBloc>().currentPartnerId;
-        if (partnerId == null) {
-          // Dispatch event to end call on backend
-          context.read<VideoBloc>().add(EndCallEvent(partnerId));
-          // Optionally show a snackbar or debug print here
-          print("No remote user connected in 6 seconds, ending call.");
-        }
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -141,9 +123,6 @@ class _VideoCallViewState extends State<VideoCallView> {
               context.read<VideoBloc>().add(
                 CreatePeerConnectionEvent(state.localStream),
               );
-
-              // Start the timer to wait for remote user connection
-              _startNoRemoteUserTimer();
             }
 
             // When remote stream updates (remote user connected), show remote video and cancel timer
@@ -288,9 +267,6 @@ class _VideoCallViewState extends State<VideoCallView> {
                                                     userDetails: user.toJson(),
                                                   ),
                                                 );
-
-                                                // Start the 6-second auto-end timer
-                                                _startNoRemoteUserTimer();
                                               },
                                               icon: const Icon(Icons.videocam),
                                               label: Text(
@@ -405,9 +381,6 @@ class _VideoCallViewState extends State<VideoCallView> {
                               context.read<VideoBloc>().add(
                                 StartRandomCall(userDetails: user.toJson()),
                               );
-
-                              // Start the 6-second auto-end timer
-                              _startNoRemoteUserTimer();
                             },
                             icon: const Icon(Icons.shuffle),
                             label: Text(
