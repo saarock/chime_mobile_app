@@ -154,6 +154,7 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
 
   Future<void> _onEndCall(EndCallEvent event, Emitter<VideoState> emit) async {
     try {
+      print("Call ending.....");
       endCallUseCase.execute(event.partnerId);
       await _peerConnection?.close();
       _peerConnection = null;
@@ -162,6 +163,7 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
       _remoteStream = null;
       _currentPartnerId = null;
       emit(VideoCallEnded());
+      print("call END");
     } catch (e) {
       emit(VideoError('Failed to end call: $e'));
     }

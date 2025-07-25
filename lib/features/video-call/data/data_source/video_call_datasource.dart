@@ -13,7 +13,7 @@ abstract class IVideoCallDataSource {
   void sendOffer(Map<String, dynamic> offer);
   void sendAnswer(Map<String, dynamic> answer);
   void sendIceCandidate(Map<String, dynamic> candidate);
-  void endCall(String partnerId);
+  void endCall(String? partnerId);
 
   // ───────────────────────────────────────────────
   // 3) SOCKET EVENT LISTENERS

@@ -22,7 +22,8 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
   @override
   void initialize({String? jwt}) {
     _socket = IO.io(
-      'http://10.0.2.2:8000/video',
+      // 'http://10.0.2.2:8000/video',
+      'http://192.168.101.3:8000/video',
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
@@ -119,7 +120,7 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
   }
 
   @override
-  void endCall(String partnerId) {
+  void endCall(String? partnerId) {
     _socket.emit('end-call', {'partnerId': partnerId});
     _peerConnection?.close();
     _peerConnection = null;
