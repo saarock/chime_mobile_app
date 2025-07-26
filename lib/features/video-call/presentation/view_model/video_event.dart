@@ -64,3 +64,11 @@ class StartRandomCall extends VideoEvent {
 }
 
 class InCallEvent extends VideoEvent {}
+
+class MuteMicEvent extends VideoEvent {}
+
+class UnmuteMicEvent extends VideoEvent {}
+
+class SwitchCameraEvent extends VideoEvent {}
+
+class LowLightDetectedEvent extends VideoEvent {}

@@ -14,6 +14,7 @@ import 'package:chime/features/splash/presentation/view_model/splash_view_model.
 import 'package:chime/features/video-call/data/data_source/remote_datasource/video_call_datasource.dart';
 import 'package:chime/features/video-call/data/data_source/video_call_datasource.dart';
 import 'package:chime/features/video-call/data/repository/remote_repository/user_video_remote_repository.dart';
+import 'package:chime/features/video-call/data/sensors/sensor_service.dart';
 import 'package:chime/features/video-call/domain/repository/video_call_repository.dart';
 import 'package:chime/features/video-call/domain/use_case/create_peer_connection_usecase.dart';
 import 'package:chime/features/video-call/domain/use_case/end_call_usecase.dart';
@@ -82,6 +83,11 @@ Future<void> _initProfileModule() async {
 
 // Video (register your VideoBloc here here)
 Future<void> _initVideoModule() async {
+  // Register SensorService
+  if (!serviceLocator.isRegistered<SensorService>()) {
+    serviceLocator.registerLazySingleton<SensorService>(() => SensorService());
+  }
+
   // Register the data source first
   if (!serviceLocator.isRegistered<IVideoCallDataSource>()) {
     serviceLocator.registerLazySingleton<IVideoCallDataSource>(
@@ -140,6 +146,7 @@ Future<void> _initVideoModule() async {
       sendIceCandidateUseCase: serviceLocator<SendIceCandidateUseCase>(),
       endCallUseCase: serviceLocator<EndCallUseCase>(),
       getLocalStreamUseCase: serviceLocator<GetLocalStreamUseCase>(),
+      sensorService: serviceLocator<SensorService>(),
       createPeerConnectionUseCase:
           serviceLocator<CreatePeerConnectionUseCase>(),
     ),

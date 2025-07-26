@@ -48,3 +48,11 @@ class VideoMatchFound extends VideoState {
 }
 
 class VideoInCall extends VideoState {}
+
+class VideoMicMuted extends VideoState {}
+
+class VideoMicUnmuted extends VideoState {}
+
+class VideoCameraSwitched extends VideoState {}
+
+class VideoLowLightDetected extends VideoState {}

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:chime/features/video-call/data/sensors/sensor_service.dart';
 import 'package:chime/features/video-call/domain/repository/video_call_repository.dart';
 import 'package:chime/features/video-call/domain/use_case/create_peer_connection_usecase.dart';
 import 'package:chime/features/video-call/domain/use_case/end_call_usecase.dart';
@@ -25,6 +26,7 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
   final EndCallUseCase endCallUseCase;
   final GetLocalStreamUseCase getLocalStreamUseCase;
   final CreatePeerConnectionUseCase createPeerConnectionUseCase;
+  final SensorService _sensorService;
 
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
@@ -48,7 +50,9 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     required this.endCallUseCase,
     required this.getLocalStreamUseCase,
     required this.createPeerConnectionUseCase,
-  }) : super(VideoInitial()) {
+    required SensorService sensorService,
+  }) : _sensorService = sensorService,
+       super(VideoInitial()) {
     on<ConnectSocket>(_onConnectSocket);
     on<SendOfferEvent>(_onSendOffer);
     on<SendAnswerEvent>(_onSendAnswer);
@@ -64,6 +68,71 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     on<LoadLocalStreamEvent>(_onLoadLocalStream);
     on<CreatePeerConnectionEvent>(_onCreatePeerConnection);
     on<StartRandomCall>(_onStartRandomCall);
+    on<MuteMicEvent>(_onMuteMic);
+    on<UnmuteMicEvent>(_onUnmuteMic);
+    on<SwitchCameraEvent>(_onSwitchCamera);
+    on<LowLightDetectedEvent>(_onLowLight);
+
+    _sensorService.initSensors();
+    _sensorService.proximityStream.listen((isNear) {
+      print("👃 Proximity: ${isNear ? "Near" : "Far"}");
+      add(isNear ? MuteMicEvent() : UnmuteMicEvent());
+    });
+
+    _sensorService.lightStream.listen((lux) {
+      print("💡 Light Sensor: $lux lux");
+      if (lux < 10) {
+        add(LowLightDetectedEvent());
+      }
+    });
+
+    _sensorService.shakeStream.listen((_) {
+      print("📳 Shake detected!");
+      add(SwitchCameraEvent());
+    });
+  }
+
+  //  ######################## SENSORS ###########################
+  Future<void> _onMuteMic(MuteMicEvent event, Emitter<VideoState> emit) async {
+    try {
+      _localStream?.getAudioTracks().forEach((track) {
+        track.enabled = false;
+      });
+      emit(VideoMicMuted());
+    } catch (e) {
+      emit(VideoError("Failed to mute mic: $e"));
+    }
+  }
+
+  Future<void> _onUnmuteMic(
+    UnmuteMicEvent event,
+    Emitter<VideoState> emit,
+  ) async {
+    try {
+      _localStream?.getAudioTracks().forEach((track) {
+        track.enabled = true;
+      });
+      emit(VideoMicUnmuted());
+    } catch (e) {
+      emit(VideoError("Failed to unmute mic: $e"));
+    }
+  }
+
+  Future<void> _onSwitchCamera(
+    SwitchCameraEvent event,
+    Emitter<VideoState> emit,
+  ) async {
+    try {
+      final videoTrack = _localStream?.getVideoTracks().first;
+      await Helper.switchCamera(videoTrack!);
+      emit(VideoCameraSwitched());
+    } catch (e) {
+      emit(VideoError("Failed to switch camera: $e"));
+    }
+  }
+
+  void _onLowLight(LowLightDetectedEvent event, Emitter<VideoState> emit) {
+    emit(VideoLowLightDetected());
   }
 
   Future<void> _onConnectSocket(
@@ -352,6 +421,7 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     _selfLoopSub.cancel();
     _matchFoundSub.cancel();
     _onlineUserSub.cancel();
+    _sensorService.dispose();
     return super.close();
   }
 }

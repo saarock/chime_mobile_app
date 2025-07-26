@@ -7,10 +7,10 @@ class ApiEndpoints {
 
   // For Android Emulator
   // static const String serverAddress = "http://10.0.2.2:8000";
-  static const String serverAddress = "http://192.168.101.3:8000";
+  static const String serverAddress = "http://192.168.101.4:8000";
 
   // For iOS Simulator
-  //static const String serverAddress = "http://localhost:3000";
+  //static const String serverAddress = "http://localhost:8000";
 
   // For iPhone (uncomment if needed)
   static const String baseUrl = "$serverAddress/api/v1/users";

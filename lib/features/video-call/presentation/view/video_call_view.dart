@@ -1,9 +1,9 @@
 import 'dart:async'; // Import for Timer
 
+import 'package:chime/features/video-call/presentation/view_model/video_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:chime/features/video-call/presentation/view_model/video_view_model.dart';
 import 'package:chime/features/video-call/presentation/view_model/video_event.dart';
 import 'package:chime/features/video-call/presentation/view_model/video_state.dart';
 import 'package:chime/app/shared_pref/cooki_cache.dart';
@@ -18,21 +18,25 @@ class VideoCallView extends StatefulWidget {
   State<VideoCallView> createState() => _VideoCallViewState();
 }
 
-class _VideoCallViewState extends State<VideoCallView> {
-  // Renderers for local and remote video streams
+class _VideoCallViewState extends State<VideoCallView>
+    with TickerProviderStateMixin {
   final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
   final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
 
-  // Flag to track if remote user is connected
   bool _remoteUserConnected = false;
-
-  // Timer to auto-end call if no remote user connects within 6 seconds
   Timer? _noRemoteUserTimer;
+
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
-    // Request permissions and initialize renderers & socket connection
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
     _requestPermissionsAndInit();
 
     _remoteUserConnected = false;
@@ -40,19 +44,18 @@ class _VideoCallViewState extends State<VideoCallView> {
 
   @override
   void dispose() {
-    // Cancel any active timer on dispose to avoid memory leaks
     _noRemoteUserTimer?.cancel();
 
-    // Dispose video renderers properly
     _localRenderer.srcObject = null;
     _remoteRenderer.srcObject = null;
     _localRenderer.dispose();
     _remoteRenderer.dispose();
 
+    _pulseController.dispose();
+
     super.dispose();
   }
 
-  // Request camera and microphone permissions, initialize renderers, and connect to socket
   Future<void> _requestPermissionsAndInit() async {
     final statuses = await [Permission.camera, Permission.microphone].request();
 
@@ -62,7 +65,6 @@ class _VideoCallViewState extends State<VideoCallView> {
     if (cameraGranted && micGranted) {
       await _initRenderers();
       await _initSocketConnection();
-      // Load local camera stream
       context.read<VideoBloc>().add(LoadLocalStreamEvent());
     } else {
       if (!mounted) return;
@@ -79,13 +81,11 @@ class _VideoCallViewState extends State<VideoCallView> {
     }
   }
 
-  // Initialize local and remote video renderers
   Future<void> _initRenderers() async {
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
   }
 
-  // Initialize socket connection with access token
   Future<void> _initSocketConnection() async {
     final videoBloc = context.read<VideoBloc>();
     final String? accessToken = await CookieCache.getAccessToken();
@@ -114,10 +114,8 @@ class _VideoCallViewState extends State<VideoCallView> {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
-
         body: BlocConsumer<VideoBloc, VideoState>(
           listener: (context, state) {
-            // When local stream is loaded, assign to renderer and create peer connection
             if (state is VideoLocalStreamLoaded) {
               _localRenderer.srcObject = state.localStream;
               context.read<VideoBloc>().add(
@@ -125,26 +123,22 @@ class _VideoCallViewState extends State<VideoCallView> {
               );
             }
 
-            // When remote stream updates (remote user connected), show remote video and cancel timer
             if (state is VideoRemoteStreamUpdated) {
               _remoteUserConnected = true;
               _remoteRenderer.srcObject = state.remoteStream;
-
-              // Cancel the timer as remote user connected
               _noRemoteUserTimer?.cancel();
             }
 
-            // Reset connection state and cancel timer when call ends
             if (state is VideoCallEnded) {
               _remoteUserConnected = false;
               _remoteRenderer.srcObject = null;
-
               _noRemoteUserTimer?.cancel();
             }
           },
-
           builder: (context, state) {
             final onlineCount = context.watch<VideoBloc>().onlineUserCount;
+            final isCalling =
+                state is VideoInCall || state is VideoWaitingForMatch;
 
             String statusMessage = "";
             if (state is VideoConnecting) {
@@ -155,14 +149,18 @@ class _VideoCallViewState extends State<VideoCallView> {
               statusMessage = "📷 Camera ready. Waiting...";
             } else if (state is VideoWaitingForMatch) {
               statusMessage = "⌛ Waiting for a match...";
-            } else if (state is VideoMatchFound) {
-              statusMessage = "🎯 Match found!";
-            } else if (state is VideoInCall) {
-              statusMessage = "📞 In call...";
             } else if (state is VideoCallEnded) {
               statusMessage = "📴 Call ended.";
             } else if (state is VideoError) {
               statusMessage = "❌ ${state.message}";
+            } else if (state is VideoMicMuted) {
+              statusMessage = "🔇 Microphone muted due to proximity";
+            } else if (state is VideoMicUnmuted) {
+              statusMessage = "🎤 Microphone unmuted";
+            } else if (state is VideoCameraSwitched) {
+              statusMessage = "📸 Camera switched due to shake";
+            } else if (state is VideoLowLightDetected) {
+              statusMessage = "💡 Low light detected, please turn on light";
             }
 
             return LayoutBuilder(
@@ -238,59 +236,85 @@ class _VideoCallViewState extends State<VideoCallView> {
                                             SizedBox(
                                               height: isSmallWidth ? 24 : 32,
                                             ),
-
-                                            // Start random call button
-                                            ElevatedButton.icon(
-                                              onPressed: () {
-                                                final loginState =
-                                                    context
-                                                        .read<LoginViewModel>()
-                                                        .state;
-                                                final user =
-                                                    loginState.userApiModel;
-
-                                                if (user == null) {
-                                                  showMySnackBar(
-                                                    context: context,
-                                                    message:
-                                                        "Something went wrong. Please logout and login again or try later.",
-                                                  );
-                                                  return;
-                                                }
-
-                                                // Reset flag before new call
-                                                _remoteUserConnected = false;
-
-                                                // Dispatch start random call event
-                                                context.read<VideoBloc>().add(
-                                                  StartRandomCall(
-                                                    userDetails: user.toJson(),
-                                                  ),
-                                                );
-                                              },
-                                              icon: const Icon(Icons.videocam),
-                                              label: Text(
-                                                "Start Random Call",
-                                                style: TextStyle(
-                                                  fontSize:
-                                                      isSmallWidth ? 16 : 18,
+                                            ScaleTransition(
+                                              scale: Tween(
+                                                begin: 0.9,
+                                                end: 1.1,
+                                              ).animate(
+                                                CurvedAnimation(
+                                                  parent: _pulseController,
+                                                  curve: Curves.easeInOut,
                                                 ),
                                               ),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor:
-                                                    Colors.tealAccent.shade700,
-                                                foregroundColor: Colors.black,
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal:
-                                                      isSmallWidth ? 28 : 38,
-                                                  vertical:
-                                                      isSmallWidth ? 12 : 16,
+                                              child: ElevatedButton.icon(
+                                                onPressed:
+                                                    isCalling
+                                                        ? null
+                                                        : () {
+                                                          final loginState =
+                                                              context
+                                                                  .read<
+                                                                    LoginViewModel
+                                                                  >()
+                                                                  .state;
+                                                          final user =
+                                                              loginState
+                                                                  .userApiModel;
+
+                                                          if (user == null) {
+                                                            showMySnackBar(
+                                                              context: context,
+                                                              message:
+                                                                  "Something went wrong. Please logout and login again or try later.",
+                                                            );
+                                                            return;
+                                                          }
+
+                                                          _remoteUserConnected =
+                                                              false;
+                                                          context
+                                                              .read<VideoBloc>()
+                                                              .add(
+                                                                StartRandomCall(
+                                                                  userDetails:
+                                                                      user.toJson(),
+                                                                ),
+                                                              );
+                                                        },
+                                                icon: const Icon(
+                                                  Icons.videocam,
                                                 ),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(30),
+                                                label: Text(
+                                                  isCalling
+                                                      ? "Calling..."
+                                                      : "Start Random Call",
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        isSmallWidth ? 16 : 18,
+                                                  ),
                                                 ),
-                                                elevation: 6,
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      isCalling
+                                                          ? Colors.grey.shade700
+                                                          : Colors
+                                                              .tealAccent
+                                                              .shade700,
+                                                  foregroundColor: Colors.black,
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal:
+                                                        isSmallWidth ? 28 : 38,
+                                                    vertical:
+                                                        isSmallWidth ? 12 : 16,
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          30,
+                                                        ),
+                                                  ),
+                                                  elevation: 6,
+                                                ),
                                               ),
                                             ),
                                           ],
@@ -345,6 +369,34 @@ class _VideoCallViewState extends State<VideoCallView> {
                               ),
                             ),
                           ),
+
+                          // Overlay when waiting or connecting
+                          if (state is VideoConnecting ||
+                              state is VideoWaitingForMatch)
+                            Positioned.fill(
+                              child: Container(
+                                color: Colors.black54,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const CircularProgressIndicator(
+                                        color: Colors.tealAccent,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        statusMessage,
+                                        style: const TextStyle(
+                                          color: Colors.tealAccent,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -361,27 +413,30 @@ class _VideoCallViewState extends State<VideoCallView> {
                         runSpacing: 12,
                         children: [
                           ElevatedButton.icon(
-                            onPressed: () {
-                              final loginState =
-                                  context.read<LoginViewModel>().state;
-                              final user = loginState.userApiModel;
+                            onPressed:
+                                isCalling
+                                    ? null
+                                    : () {
+                                      final loginState =
+                                          context.read<LoginViewModel>().state;
+                                      final user = loginState.userApiModel;
 
-                              if (user == null) {
-                                showMySnackBar(
-                                  context: context,
-                                  message: "User details not found",
-                                );
-                                return;
-                              }
+                                      if (user == null) {
+                                        showMySnackBar(
+                                          context: context,
+                                          message: "User details not found",
+                                        );
+                                        return;
+                                      }
 
-                              // Reset flag before new call
-                              _remoteUserConnected = false;
+                                      _remoteUserConnected = false;
 
-                              // Dispatch start random call event
-                              context.read<VideoBloc>().add(
-                                StartRandomCall(userDetails: user.toJson()),
-                              );
-                            },
+                                      context.read<VideoBloc>().add(
+                                        StartRandomCall(
+                                          userDetails: user.toJson(),
+                                        ),
+                                      );
+                                    },
                             icon: const Icon(Icons.shuffle),
                             label: Text(
                               "Start Random Call",
@@ -390,7 +445,10 @@ class _VideoCallViewState extends State<VideoCallView> {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green.shade600,
+                              backgroundColor:
+                                  isCalling
+                                      ? Colors.grey
+                                      : Colors.green.shade600,
                               padding: EdgeInsets.symmetric(
                                 horizontal: isSmallWidth ? 20 : 28,
                                 vertical: isSmallWidth ? 12 : 14,
@@ -419,16 +477,13 @@ class _VideoCallViewState extends State<VideoCallView> {
                                         return;
                                       }
 
-                                      // Dispatch event to end ongoing call
                                       context.read<VideoBloc>().add(
                                         EndCallEvent(partnerId),
                                       );
 
-                                      // Reset state
                                       _remoteUserConnected = false;
                                       _remoteRenderer.srcObject = null;
 
-                                      // Cancel timer as call ended
                                       _noRemoteUserTimer?.cancel();
                                     }
                                     : null,
