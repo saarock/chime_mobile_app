@@ -72,3 +72,14 @@ class UnmuteMicEvent extends VideoEvent {}
 class SwitchCameraEvent extends VideoEvent {}
 
 class LowLightDetectedEvent extends VideoEvent {}
+
+// Toggle audio and video
+class ToggleMicEvent extends VideoEvent {
+  final bool mute;
+  ToggleMicEvent({required this.mute});
+}
+
+class ToggleCameraEnabledEvent extends VideoEvent {
+  final bool enabled;
+  ToggleCameraEnabledEvent({required this.enabled});
+}

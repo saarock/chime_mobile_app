@@ -98,6 +98,21 @@ class _VideoCallViewState extends State<VideoCallView>
     videoBloc.add(ConnectSocket(accessToken));
   }
 
+  void _handleEndCall() {
+    final partnerId = context.read<VideoBloc>().currentPartnerId;
+    // Dispatch event to end call on bloc
+    context.read<VideoBloc>().add(EndCallEvent(partnerId));
+
+    // Reset local states and UI
+    setState(() {
+      _remoteUserConnected = false;
+      _remoteRenderer.srcObject = null;
+    });
+
+    // Cancel any timers
+    _noRemoteUserTimer?.cancel();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -105,15 +120,6 @@ class _VideoCallViewState extends State<VideoCallView>
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          elevation: 0,
-          centerTitle: true,
-          title: const Text(
-            "Chime Talk - Video Call",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
         body: BlocConsumer<VideoBloc, VideoState>(
           listener: (context, state) {
             if (state is VideoLocalStreamLoaded) {
@@ -124,14 +130,18 @@ class _VideoCallViewState extends State<VideoCallView>
             }
 
             if (state is VideoRemoteStreamUpdated) {
-              _remoteUserConnected = true;
-              _remoteRenderer.srcObject = state.remoteStream;
+              setState(() {
+                _remoteUserConnected = true;
+                _remoteRenderer.srcObject = state.remoteStream;
+              });
               _noRemoteUserTimer?.cancel();
             }
 
             if (state is VideoCallEnded) {
-              _remoteUserConnected = false;
-              _remoteRenderer.srcObject = null;
+              setState(() {
+                _remoteUserConnected = false;
+                _remoteRenderer.srcObject = null;
+              });
               _noRemoteUserTimer?.cancel();
             }
           },
@@ -270,8 +280,11 @@ class _VideoCallViewState extends State<VideoCallView>
                                                             return;
                                                           }
 
-                                                          _remoteUserConnected =
-                                                              false;
+                                                          setState(() {
+                                                            _remoteUserConnected =
+                                                                false;
+                                                          });
+
                                                           context
                                                               .read<VideoBloc>()
                                                               .add(
@@ -429,7 +442,9 @@ class _VideoCallViewState extends State<VideoCallView>
                                         return;
                                       }
 
-                                      _remoteUserConnected = false;
+                                      setState(() {
+                                        _remoteUserConnected = false;
+                                      });
 
                                       context.read<VideoBloc>().add(
                                         StartRandomCall(
@@ -461,32 +476,7 @@ class _VideoCallViewState extends State<VideoCallView>
                           ),
 
                           ElevatedButton.icon(
-                            onPressed:
-                                _remoteUserConnected
-                                    ? () {
-                                      final partnerId =
-                                          context
-                                              .read<VideoBloc>()
-                                              .currentPartnerId;
-                                      if (partnerId == null) {
-                                        showMySnackBar(
-                                          context: context,
-                                          message:
-                                              "No active partner to end call.",
-                                        );
-                                        return;
-                                      }
-
-                                      context.read<VideoBloc>().add(
-                                        EndCallEvent(partnerId),
-                                      );
-
-                                      _remoteUserConnected = false;
-                                      _remoteRenderer.srcObject = null;
-
-                                      _noRemoteUserTimer?.cancel();
-                                    }
-                                    : null,
+                            onPressed: isCalling ? _handleEndCall : null,
                             icon: const Icon(Icons.call_end),
                             label: Text(
                               "End Call",

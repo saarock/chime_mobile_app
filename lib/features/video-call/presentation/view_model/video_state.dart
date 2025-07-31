@@ -56,3 +56,7 @@ class VideoMicUnmuted extends VideoState {}
 class VideoCameraSwitched extends VideoState {}
 
 class VideoLowLightDetected extends VideoState {}
+
+class VideoCameraEnabled extends VideoState {}
+
+class VideoCameraDisabled extends VideoState {}

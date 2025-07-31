@@ -72,6 +72,25 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     on<UnmuteMicEvent>(_onUnmuteMic);
     on<SwitchCameraEvent>(_onSwitchCamera);
     on<LowLightDetectedEvent>(_onLowLight);
+    // Toggle audio adn video
+    on<ToggleMicEvent>((event, emit) {
+      if (state is VideoLocalStreamLoaded) {
+        final stream = (state as VideoLocalStreamLoaded).localStream;
+        for (var track in stream.getAudioTracks()) {
+          track.enabled = !event.mute;
+        }
+        emit(event.mute ? VideoMicMuted() : VideoMicUnmuted());
+      }
+    });
+    on<ToggleCameraEnabledEvent>((event, emit) {
+      if (state is VideoLocalStreamLoaded) {
+        final stream = (state as VideoLocalStreamLoaded).localStream;
+        for (var track in stream.getVideoTracks()) {
+          track.enabled = event.enabled;
+        }
+        emit(event.enabled ? VideoCameraEnabled() : VideoCameraDisabled());
+      }
+    });
 
     _sensorService.initSensors();
     _sensorService.proximityStream.listen((isNear) {

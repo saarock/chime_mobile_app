@@ -23,7 +23,7 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
   void initialize({String? jwt}) {
     _socket = IO.io(
       // 'http://10.0.2.2:8000/video',
-      'http://192.168.101.4:8000/video',
+      'http://192.168.101.3:8000/video',
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
