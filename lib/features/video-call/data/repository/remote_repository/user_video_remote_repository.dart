@@ -19,6 +19,10 @@ class VideoCallRepositoryImpl implements IVideoCallRepository {
   final _matchFoundController =
       StreamController<Map<String, dynamic>>.broadcast();
 
+  // New chat message controller
+  final _chatMessageController =
+      StreamController<Map<String, dynamic>>.broadcast();
+
   VideoCallRepositoryImpl(this.dataSource);
 
   @override
@@ -38,6 +42,11 @@ class VideoCallRepositoryImpl implements IVideoCallRepository {
     );
 
     dataSource.onUserCount((count) => _onlineUserCountController.add(count));
+
+    // Listen for incoming chat messages from data source
+    dataSource.onChatMessageReceived((chatMessage) {
+      _chatMessageController.add(chatMessage);
+    });
   }
 
   @override
@@ -91,7 +100,13 @@ class VideoCallRepositoryImpl implements IVideoCallRepository {
     await _selfLoopController.close();
     await _matchFoundController.close();
     await _onlineUserCountController.close();
+    await _chatMessageController.close();
   }
+
+  // New chat message stream getter
+  @override
+  Stream<Map<String, dynamic>> get chatMessageStream =>
+      _chatMessageController.stream;
 
   // Expose streams to Bloc
 
@@ -120,4 +135,12 @@ class VideoCallRepositoryImpl implements IVideoCallRepository {
 
   @override
   Stream<int> get onlineUserCountStream => _onlineUserCountController.stream;
+
+  @override
+  Future<void> sendChatMessage({
+    required String toUserId,
+    required String message,
+  }) {
+    return dataSource.sendChatMessage(toUserId: toUserId, message: message);
+  }
 }

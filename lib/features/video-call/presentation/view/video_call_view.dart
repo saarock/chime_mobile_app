@@ -1,5 +1,7 @@
 import 'dart:async'; // Import for Timer
 
+import 'package:chime/core/common/chat_input_widget.dart';
+import 'package:chime/core/common/chat_widget.dart';
 import 'package:chime/features/video-call/presentation/view_model/video_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,7 +33,8 @@ class _VideoCallViewState extends State<VideoCallView>
   @override
   void initState() {
     super.initState();
-
+    _remoteRenderer.initialize();
+    _localRenderer.initialize();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -44,6 +47,7 @@ class _VideoCallViewState extends State<VideoCallView>
 
   @override
   void dispose() {
+    _handleEndCall();
     _noRemoteUserTimer?.cancel();
 
     _localRenderer.srcObject = null;
@@ -58,13 +62,14 @@ class _VideoCallViewState extends State<VideoCallView>
 
   Future<void> _requestPermissionsAndInit() async {
     final statuses = await [Permission.camera, Permission.microphone].request();
-
+    if (!mounted) return;
     final cameraGranted = statuses[Permission.camera]!.isGranted;
     final micGranted = statuses[Permission.microphone]!.isGranted;
 
     if (cameraGranted && micGranted) {
       await _initRenderers();
       await _initSocketConnection();
+      // ignore: use_build_context_synchronously
       context.read<VideoBloc>().add(LoadLocalStreamEvent());
     } else {
       if (!mounted) return;
@@ -119,18 +124,28 @@ class _VideoCallViewState extends State<VideoCallView>
 
     return SafeArea(
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         backgroundColor: Colors.black,
         body: BlocConsumer<VideoBloc, VideoState>(
           listener: (context, state) {
             if (state is VideoLocalStreamLoaded) {
               _localRenderer.srcObject = state.localStream;
-              context.read<VideoBloc>().add(
-                CreatePeerConnectionEvent(state.localStream),
-              );
             }
 
             if (state is VideoRemoteStreamUpdated) {
               setState(() {
+                _remoteRenderer.srcObject = null;
+              });
+
+              setState(() {
+                final tracks = state.remoteStream!.getTracks();
+                for (var t in tracks) {
+                  // Debug track info, remove in production if not needed
+                  print(
+                    "Track kind: ${t.kind}, id: ${t.id}, enabled: ${t.enabled}",
+                  );
+                }
+
                 _remoteUserConnected = true;
                 _remoteRenderer.srcObject = state.remoteStream;
               });
@@ -176,333 +191,399 @@ class _VideoCallViewState extends State<VideoCallView>
             return LayoutBuilder(
               builder: (context, constraints) {
                 final isSmallWidth = constraints.maxWidth < 400;
+                final maxHeight = constraints.maxHeight;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Status bar and online user count
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isSmallWidth ? 12 : 20,
-                        vertical: 16,
-                      ),
+                return SingleChildScrollView(
+                  reverse: true,
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: maxHeight),
+                    child: IntrinsicHeight(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              statusMessage,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
+                          // Status bar and online user count
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isSmallWidth ? 12 : 20,
+                              vertical: 16,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    statusMessage,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  "👥 Online Users: $onlineCount",
+                                  style: TextStyle(
+                                    color: Colors.tealAccent.shade400,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            "👥 Online Users: $onlineCount",
-                            style: TextStyle(
-                              color: Colors.tealAccent.shade400,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
 
-                    // Main video area
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child:
-                                _remoteRenderer.srcObject == null
-                                    ? Center(
-                                      child: Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: isSmallWidth ? 20 : 30,
+                          // Video area with fixed height
+                          Container(
+                            height: isSmallWidth ? 250 : 350,
+                            margin: EdgeInsets.symmetric(
+                              horizontal: isSmallWidth ? 12 : 24,
+                            ),
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child:
+                                      _remoteRenderer.srcObject == null
+                                          ? Center(
+                                            child: Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal:
+                                                    isSmallWidth ? 20 : 30,
+                                              ),
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  FittedBox(
+                                                    fit: BoxFit.scaleDown,
+                                                    child: Text(
+                                                      "✨ Ready to connect with someone?\nTap below to start a random call!",
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                        color: Colors.white70,
+                                                        fontSize:
+                                                            isSmallWidth
+                                                                ? 18
+                                                                : 22,
+                                                        fontStyle:
+                                                            FontStyle.italic,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    height:
+                                                        isSmallWidth ? 24 : 32,
+                                                  ),
+                                                  ScaleTransition(
+                                                    scale: Tween(
+                                                      begin: 0.9,
+                                                      end: 1.1,
+                                                    ).animate(
+                                                      CurvedAnimation(
+                                                        parent:
+                                                            _pulseController,
+                                                        curve: Curves.easeInOut,
+                                                      ),
+                                                    ),
+                                                    child: ElevatedButton.icon(
+                                                      onPressed:
+                                                          isCalling
+                                                              ? null
+                                                              : () {
+                                                                final loginState =
+                                                                    context
+                                                                        .read<
+                                                                          LoginViewModel
+                                                                        >()
+                                                                        .state;
+                                                                final user =
+                                                                    loginState
+                                                                        .userApiModel;
+
+                                                                if (user ==
+                                                                    null) {
+                                                                  showMySnackBar(
+                                                                    context:
+                                                                        context,
+                                                                    message:
+                                                                        "Something went wrong. Please logout and login again or try later.",
+                                                                  );
+                                                                  return;
+                                                                }
+
+                                                                setState(() {
+                                                                  _remoteUserConnected =
+                                                                      false;
+                                                                });
+
+                                                                context
+                                                                    .read<
+                                                                      VideoBloc
+                                                                    >()
+                                                                    .add(
+                                                                      StartRandomCall(
+                                                                        userDetails:
+                                                                            user.toJson(),
+                                                                      ),
+                                                                    );
+                                                              },
+                                                      icon: const Icon(
+                                                        Icons.videocam,
+                                                      ),
+                                                      label: Text(
+                                                        isCalling
+                                                            ? "Calling..."
+                                                            : "Start Random Call",
+                                                        style: TextStyle(
+                                                          fontSize:
+                                                              isSmallWidth
+                                                                  ? 16
+                                                                  : 18,
+                                                        ),
+                                                      ),
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor:
+                                                            isCalling
+                                                                ? Colors
+                                                                    .grey
+                                                                    .shade700
+                                                                : Colors
+                                                                    .tealAccent
+                                                                    .shade700,
+                                                        foregroundColor:
+                                                            Colors.black,
+                                                        padding:
+                                                            EdgeInsets.symmetric(
+                                                              horizontal:
+                                                                  isSmallWidth
+                                                                      ? 28
+                                                                      : 38,
+                                                              vertical:
+                                                                  isSmallWidth
+                                                                      ? 12
+                                                                      : 16,
+                                                            ),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                30,
+                                                              ),
+                                                        ),
+                                                        elevation: 6,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          )
+                                          : ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            child: AspectRatio(
+                                              aspectRatio: 9 / 16,
+                                              child: Container(
+                                                color: Colors.blueGrey
+                                                    .withOpacity(0.2),
+                                                child: RTCVideoView(
+                                                  _remoteRenderer,
+                                                  key: UniqueKey(),
+                                                  objectFit:
+                                                      RTCVideoViewObjectFit
+                                                          .RTCVideoViewObjectFitCover,
+                                                  mirror: true,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                ),
+
+                                // Local video preview at bottom right
+                                Positioned(
+                                  right: 16,
+                                  bottom: 16,
+                                  child: Container(
+                                    width: isSmallWidth ? 110 : 140,
+                                    height: isSmallWidth ? 140 : 180,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.white70,
+                                        width: 1.8,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: Colors.grey.shade900.withOpacity(
+                                        0.7,
+                                      ),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: Colors.black45,
+                                          blurRadius: 8,
+                                          offset: Offset(2, 2),
                                         ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: AspectRatio(
+                                        aspectRatio: 9 / 16,
+                                        child: RTCVideoView(
+                                          _localRenderer,
+                                          mirror: true,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // Overlay when waiting or connecting
+                                if (state is VideoConnecting ||
+                                    state is VideoWaitingForMatch)
+                                  Positioned.fill(
+                                    child: Container(
+                                      color: Colors.black54,
+                                      child: Center(
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(
-                                                "✨ Ready to connect with someone?\nTap below to start a random call!",
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  color: Colors.white70,
-                                                  fontSize:
-                                                      isSmallWidth ? 18 : 22,
-                                                  fontStyle: FontStyle.italic,
-                                                  fontWeight: FontWeight.w400,
-                                                ),
-                                              ),
+                                            const CircularProgressIndicator(
+                                              color: Colors.tealAccent,
                                             ),
-                                            SizedBox(
-                                              height: isSmallWidth ? 24 : 32,
-                                            ),
-                                            ScaleTransition(
-                                              scale: Tween(
-                                                begin: 0.9,
-                                                end: 1.1,
-                                              ).animate(
-                                                CurvedAnimation(
-                                                  parent: _pulseController,
-                                                  curve: Curves.easeInOut,
-                                                ),
-                                              ),
-                                              child: ElevatedButton.icon(
-                                                onPressed:
-                                                    isCalling
-                                                        ? null
-                                                        : () {
-                                                          final loginState =
-                                                              context
-                                                                  .read<
-                                                                    LoginViewModel
-                                                                  >()
-                                                                  .state;
-                                                          final user =
-                                                              loginState
-                                                                  .userApiModel;
-
-                                                          if (user == null) {
-                                                            showMySnackBar(
-                                                              context: context,
-                                                              message:
-                                                                  "Something went wrong. Please logout and login again or try later.",
-                                                            );
-                                                            return;
-                                                          }
-
-                                                          setState(() {
-                                                            _remoteUserConnected =
-                                                                false;
-                                                          });
-
-                                                          context
-                                                              .read<VideoBloc>()
-                                                              .add(
-                                                                StartRandomCall(
-                                                                  userDetails:
-                                                                      user.toJson(),
-                                                                ),
-                                                              );
-                                                        },
-                                                icon: const Icon(
-                                                  Icons.videocam,
-                                                ),
-                                                label: Text(
-                                                  isCalling
-                                                      ? "Calling..."
-                                                      : "Start Random Call",
-                                                  style: TextStyle(
-                                                    fontSize:
-                                                        isSmallWidth ? 16 : 18,
-                                                  ),
-                                                ),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      isCalling
-                                                          ? Colors.grey.shade700
-                                                          : Colors
-                                                              .tealAccent
-                                                              .shade700,
-                                                  foregroundColor: Colors.black,
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal:
-                                                        isSmallWidth ? 28 : 38,
-                                                    vertical:
-                                                        isSmallWidth ? 12 : 16,
-                                                  ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          30,
-                                                        ),
-                                                  ),
-                                                  elevation: 6,
-                                                ),
+                                            const SizedBox(height: 12),
+                                            Text(
+                                              statusMessage,
+                                              style: const TextStyle(
+                                                color: Colors.tealAccent,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w600,
                                               ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                    )
-                                    : ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: AspectRatio(
-                                        aspectRatio: 9 / 16,
-                                        child: RTCVideoView(
-                                          _remoteRenderer,
-                                          objectFit:
-                                              RTCVideoViewObjectFit
-                                                  .RTCVideoViewObjectFitCover,
-                                        ),
-                                      ),
                                     ),
-                          ),
-
-                          // Local video preview at bottom right
-                          Positioned(
-                            right: 16,
-                            bottom: 16,
-                            child: Container(
-                              width: isSmallWidth ? 110 : 140,
-                              height: isSmallWidth ? 140 : 180,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Colors.white70,
-                                  width: 1.8,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.grey.shade900.withOpacity(0.7),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Colors.black45,
-                                    blurRadius: 8,
-                                    offset: Offset(2, 2),
                                   ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: AspectRatio(
-                                  aspectRatio: 9 / 16,
-                                  child: RTCVideoView(
-                                    _localRenderer,
-                                    mirror: true,
-                                  ),
-                                ),
-                              ),
+                              ],
                             ),
                           ),
 
-                          // Overlay when waiting or connecting
-                          if (state is VideoConnecting ||
-                              state is VideoWaitingForMatch)
-                            Positioned.fill(
-                              child: Container(
-                                color: Colors.black54,
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const CircularProgressIndicator(
-                                        color: Colors.tealAccent,
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        statusMessage,
-                                        style: const TextStyle(
-                                          color: Colors.tealAccent,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
+                          const SizedBox(height: 12),
 
-                    // Bottom buttons for start/end call
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isSmallWidth ? 12 : 24,
-                        vertical: isSmallWidth ? 20 : 24,
-                      ),
-                      child: Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 16,
-                        runSpacing: 12,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed:
-                                isCalling
-                                    ? null
-                                    : () {
-                                      final loginState =
-                                          context.read<LoginViewModel>().state;
-                                      final user = loginState.userApiModel;
+                          // Chat messages widget
+                          SizedBox(height: 150, child: ChatMessagesWidget()),
 
-                                      if (user == null) {
-                                        showMySnackBar(
-                                          context: context,
-                                          message: "User details not found",
-                                        );
-                                        return;
-                                      }
-
-                                      setState(() {
-                                        _remoteUserConnected = false;
-                                      });
-
-                                      context.read<VideoBloc>().add(
-                                        StartRandomCall(
-                                          userDetails: user.toJson(),
-                                        ),
-                                      );
-                                    },
-                            icon: const Icon(Icons.shuffle),
-                            label: Text(
-                              "Start Random Call",
-                              style: TextStyle(
-                                fontSize: isSmallWidth ? 14 : 16,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  isCalling
-                                      ? Colors.grey
-                                      : Colors.green.shade600,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isSmallWidth ? 20 : 28,
-                                vertical: isSmallWidth ? 12 : 14,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              elevation: 4,
-                            ),
+                          // Chat input widget
+                          BlocBuilder<VideoBloc, VideoState>(
+                            builder: (context, state) {
+                              final hasPartner =
+                                  _remoteRenderer.srcObject != null;
+                              return ChatInputWidget(hasPartner: hasPartner);
+                            },
                           ),
 
-                          ElevatedButton.icon(
-                            onPressed: isCalling ? _handleEndCall : null,
-                            icon: const Icon(Icons.call_end),
-                            label: Text(
-                              "End Call",
-                              style: TextStyle(
-                                fontSize: isSmallWidth ? 14 : 16,
-                              ),
+                          // Bottom buttons: Start/End call
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isSmallWidth ? 12 : 24,
+                              vertical: isSmallWidth ? 20 : 24,
                             ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  _remoteUserConnected
-                                      ? Colors.red.shade700
-                                      : Colors.grey,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isSmallWidth ? 20 : 28,
-                                vertical: isSmallWidth ? 12 : 14,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              elevation: 4,
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 16,
+                              runSpacing: 12,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed:
+                                      isCalling
+                                          ? null
+                                          : () {
+                                            final loginState =
+                                                context
+                                                    .read<LoginViewModel>()
+                                                    .state;
+                                            final user =
+                                                loginState.userApiModel;
+
+                                            if (user == null) {
+                                              showMySnackBar(
+                                                context: context,
+                                                message:
+                                                    "User details not found",
+                                              );
+                                              return;
+                                            }
+
+                                            setState(() {
+                                              _remoteUserConnected = false;
+                                            });
+
+                                            context.read<VideoBloc>().add(
+                                              StartRandomCall(
+                                                userDetails: user.toJson(),
+                                              ),
+                                            );
+                                          },
+                                  icon: const Icon(Icons.shuffle),
+                                  label: Text(
+                                    "Start Random Call",
+                                    style: TextStyle(
+                                      fontSize: isSmallWidth ? 14 : 16,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        isCalling
+                                            ? Colors.grey
+                                            : Colors.green.shade600,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isSmallWidth ? 20 : 28,
+                                      vertical: isSmallWidth ? 12 : 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    elevation: 4,
+                                  ),
+                                ),
+
+                                ElevatedButton.icon(
+                                  onPressed: isCalling ? _handleEndCall : null,
+                                  icon: const Icon(Icons.call_end),
+                                  label: Text(
+                                    "End Call",
+                                    style: TextStyle(
+                                      fontSize: isSmallWidth ? 14 : 16,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        _remoteUserConnected
+                                            ? Colors.red.shade700
+                                            : Colors.grey,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isSmallWidth ? 20 : 28,
+                                      vertical: isSmallWidth ? 12 : 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    elevation: 4,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
+                  ),
                 );
               },
             );

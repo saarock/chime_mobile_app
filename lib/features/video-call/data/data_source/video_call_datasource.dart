@@ -41,4 +41,16 @@ abstract class IVideoCallDataSource {
   // 5) CLEANUP
   // ───────────────────────────────────────────────
   Future<void> dispose();
+
+  // ───────────────────────────────────────────────
+  // 6) CHAT MESSAGING
+  // ───────────────────────────────────────────────
+  /// Called when a new chat message arrives from the partner
+  void onChatMessageReceived(void Function(Map<String, dynamic>) handler);
+
+  /// Send a chat message to a specific user
+  Future<void> sendChatMessage({
+    required String toUserId,
+    required String message,
+  });
 }

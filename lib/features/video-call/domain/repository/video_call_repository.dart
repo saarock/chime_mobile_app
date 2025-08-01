@@ -23,4 +23,16 @@ abstract class IVideoCallRepository {
   Stream<Map<String, dynamic>> get matchFoundStream;
   Stream<int> get onlineUserCountStream;
   Future<void> fetchOnlineUserCount();
+
+  // Chat message support:
+
+  /// Send a chat message to the specified user ID.
+  Future<void> sendChatMessage({
+    required String toUserId,
+    required String message,
+  });
+
+  /// Stream of incoming chat messages.
+  /// Emits a map containing `fromUserId` and `message` keys.
+  Stream<Map<String, dynamic>> get chatMessageStream;
 }

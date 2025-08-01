@@ -60,3 +60,10 @@ class VideoLowLightDetected extends VideoState {}
 class VideoCameraEnabled extends VideoState {}
 
 class VideoCameraDisabled extends VideoState {}
+
+// State for UI to show incoming message
+class ChatMessageReceivedState extends VideoState {
+  final String fromUserId;
+  final String message;
+  ChatMessageReceivedState(this.fromUserId, this.message);
+}

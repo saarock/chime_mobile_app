@@ -1,3 +1,5 @@
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+
 abstract class VideoEvent {}
 
 class ConnectSocket extends VideoEvent {
@@ -54,7 +56,7 @@ class MatchFoundEvent extends VideoEvent {
 class LoadLocalStreamEvent extends VideoEvent {}
 
 class CreatePeerConnectionEvent extends VideoEvent {
-  final dynamic localStream;
+  final MediaStream localStream;
   CreatePeerConnectionEvent(this.localStream);
 }
 
@@ -82,4 +84,22 @@ class ToggleMicEvent extends VideoEvent {
 class ToggleCameraEnabledEvent extends VideoEvent {
   final bool enabled;
   ToggleCameraEnabledEvent({required this.enabled});
+}
+
+class RemoteStreamReceivedEvent extends VideoEvent {
+  final MediaStream remoteStream;
+  RemoteStreamReceivedEvent(this.remoteStream);
+}
+
+// Event to send chat message
+class SendChatMessageEvent extends VideoEvent {
+  final String message;
+  SendChatMessageEvent(this.message);
+}
+
+// Event when chat message is received
+class ReceiveChatMessageEvent extends VideoEvent {
+  final String fromUserId;
+  final String message;
+  ReceiveChatMessageEvent({required this.fromUserId, required this.message});
 }

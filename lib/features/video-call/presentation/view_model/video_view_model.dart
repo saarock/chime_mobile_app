@@ -32,6 +32,9 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
   MediaStream? _localStream;
   MediaStream? _remoteStream;
 
+  // ICE candidates queue to be added only after remote description is set
+  final List<RTCIceCandidate> _remoteIceCandidateQueue = [];
+
   // Subscriptions to socket event streams
   late StreamSubscription _offerSub;
   late StreamSubscription _answerSub;
@@ -72,13 +75,21 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     on<UnmuteMicEvent>(_onUnmuteMic);
     on<SwitchCameraEvent>(_onSwitchCamera);
     on<LowLightDetectedEvent>(_onLowLight);
-    // Toggle audio adn video
+    on<SendChatMessageEvent>(_onSendChatMessage);
+    on<ReceiveChatMessageEvent>(_onReceiveChatMessage);
+
+    on<RemoteStreamReceivedEvent>((event, emit) {
+      emit(VideoRemoteStreamUpdated(event.remoteStream));
+    });
+
+    // Toggle audio and video
     on<ToggleMicEvent>((event, emit) {
       if (state is VideoLocalStreamLoaded) {
         final stream = (state as VideoLocalStreamLoaded).localStream;
         for (var track in stream.getAudioTracks()) {
           track.enabled = !event.mute;
         }
+        print('Mic toggled: muted = ${event.mute}');
         emit(event.mute ? VideoMicMuted() : VideoMicUnmuted());
       }
     });
@@ -88,32 +99,33 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
         for (var track in stream.getVideoTracks()) {
           track.enabled = event.enabled;
         }
+        print('Camera toggled: enabled = ${event.enabled}');
         emit(event.enabled ? VideoCameraEnabled() : VideoCameraDisabled());
       }
     });
 
     _sensorService.initSensors();
+
+    // Listen to sensor streams
     _sensorService.proximityStream.listen((isNear) {
-      print("👃 Proximity: ${isNear ? "Near" : "Far"}");
       add(isNear ? MuteMicEvent() : UnmuteMicEvent());
     });
 
     _sensorService.lightStream.listen((lux) {
-      print("💡 Light Sensor: $lux lux");
       if (lux < 10) {
         add(LowLightDetectedEvent());
       }
     });
 
     _sensorService.shakeStream.listen((_) {
-      print("📳 Shake detected!");
       add(SwitchCameraEvent());
     });
   }
 
-  //  ######################## SENSORS ###########################
+  // ######################## SENSORS ###########################
   Future<void> _onMuteMic(MuteMicEvent event, Emitter<VideoState> emit) async {
     try {
+      print("Muting mic...");
       _localStream?.getAudioTracks().forEach((track) {
         track.enabled = false;
       });
@@ -128,6 +140,7 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     Emitter<VideoState> emit,
   ) async {
     try {
+      print("Unmuting mic...");
       _localStream?.getAudioTracks().forEach((track) {
         track.enabled = true;
       });
@@ -142,15 +155,21 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     Emitter<VideoState> emit,
   ) async {
     try {
+      print("Switching camera...");
       final videoTrack = _localStream?.getVideoTracks().first;
-      await Helper.switchCamera(videoTrack!);
-      emit(VideoCameraSwitched());
+      if (videoTrack != null) {
+        await Helper.switchCamera(videoTrack);
+        emit(VideoCameraSwitched());
+      } else {
+        print("No video track found to switch.");
+      }
     } catch (e) {
       emit(VideoError("Failed to switch camera: $e"));
     }
   }
 
   void _onLowLight(LowLightDetectedEvent event, Emitter<VideoState> emit) {
+    print("Low light detected.");
     emit(VideoLowLightDetected());
   }
 
@@ -160,43 +179,51 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
   ) async {
     emit(VideoConnecting());
     try {
+      print("Connecting to signaling server...");
       await repository.initConnection(jwt: event.jwt);
 
-      // Fetch count manually once
+      print("Fetching online user count...");
       await repository.fetchOnlineUserCount();
 
       _answerSub = repository.answerStream.listen((answer) {
+        print("Received answer from signaling server: $answer");
         add(AnswerReceivedEvent(answer));
       });
 
       _iceCandidateSub = repository.iceCandidateStream.listen((candidate) {
+        print("Received ICE candidate from signaling server: $candidate");
         add(IceCandidateReceivedEvent(candidate));
       });
 
       _callEndedSub = repository.callEndedStream.listen((_) {
+        print("Call ended event received from signaling server.");
         add(CallEndedEvent());
       });
 
       _waitSub = repository.waitStream.listen((_) {
+        print("Wait event received.");
         add(WaitEvent());
       });
 
       _selfLoopSub = repository.selfLoopStream.listen((_) {
+        print("Self loop detected (already connected on another device).");
         add(SelfLoopEvent());
       });
 
       _matchFoundSub = repository.matchFoundStream.listen((partnerInfo) {
+        print("Match found: $partnerInfo");
         add(MatchFoundEvent(partnerInfo));
       });
 
-      // Online user count
       _onlineUserSub = repository.onlineUserCountStream.listen((count) {
         _onlineUserCount = count;
-        print('🧑‍🤝‍🧑 Online Users: $count');
+        print('🧑‍🤝‍🧑 Online Users count updated: $count');
       });
 
       emit(VideoConnected());
+      print("Socket connected and event listeners attached.");
     } catch (e) {
+      print("Socket connection failed: $e");
       emit(VideoError('Socket connection failed: $e'));
     }
   }
@@ -206,25 +233,31 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     Emitter<VideoState> emit,
   ) async {
     try {
+      print("Starting random call with user details: ${event.userDetails}");
       emit(VideoWaitingForMatch());
       repository.startRandomCall(event.userDetails);
     } catch (e) {
+      print("Failed to start random call: $e");
       emit(VideoError('Failed to start random call: $e'));
     }
   }
 
   void _onSendOffer(SendOfferEvent event, Emitter<VideoState> emit) {
     try {
+      print("Sending offer to signaling server: ${event.offer}");
       sendOfferUseCase.execute(event.offer);
     } catch (e) {
+      print("Failed to send offer: $e");
       emit(VideoError('Failed to send offer: $e'));
     }
   }
 
   void _onSendAnswer(SendAnswerEvent event, Emitter<VideoState> emit) {
     try {
+      print("Sending answer to signaling server: ${event.answer}");
       sendAnswerUseCase.execute(event.answer);
     } catch (e) {
+      print("Failed to send answer: $e");
       emit(VideoError('Failed to send answer: $e'));
     }
   }
@@ -234,25 +267,23 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     Emitter<VideoState> emit,
   ) {
     try {
+      print("Sending ICE candidate to signaling server: ${event.candidate}");
       sendIceCandidateUseCase.execute(event.candidate);
     } catch (e) {
+      print("Failed to send ICE candidate: $e");
       emit(VideoError('Failed to send ICE candidate: $e'));
     }
   }
 
   Future<void> _onEndCall(EndCallEvent event, Emitter<VideoState> emit) async {
     try {
-      print("Call ending.....");
+      print("Call ending...");
       endCallUseCase.execute(event.partnerId);
-      await _peerConnection?.close();
-      _peerConnection = null;
-      await _localStream?.dispose();
-      _localStream = null;
-      _remoteStream = null;
-      _currentPartnerId = null;
+      await _disposeCurrentSession();
       emit(VideoCallEnded());
-      print("call END");
+      print("Call ended.");
     } catch (e) {
+      print("Failed to end call: $e");
       emit(VideoError('Failed to end call: $e'));
     }
   }
@@ -266,26 +297,49 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
       final remoteOffer = offerMap['offer'];
       final from = offerMap['from'];
 
-      if (_peerConnection == null) {
-        emit(VideoError('Peer connection not established.'));
-        return;
+      print("Offer received from $from: $remoteOffer");
+
+      // Dispose old session before creating new one for incoming call
+      await _disposeCurrentSession();
+
+      // Ensure local stream is ready before creating peer connection
+      if (_localStream == null) {
+        print("Local stream not available, loading...");
+        _localStream = await getLocalStreamUseCase.execute();
+        emit(VideoLocalStreamLoaded(_localStream!));
       }
 
-      // Set remote description with received offer
+      // Create new peer connection
+      await _createPeerConnectionIfNeeded(emit);
+
+      // Set remote description (offer) from caller
       await _peerConnection!.setRemoteDescription(
         RTCSessionDescription(remoteOffer['sdp'], remoteOffer['type']),
       );
+      print("Remote description set with offer.");
 
-      // Create and set local description (answer)
-      final answer = await _peerConnection!.createAnswer();
+      // Create and set local answer
+      RTCSessionDescription answer = await _peerConnection!.createAnswer();
       await _peerConnection!.setLocalDescription(answer);
+      print("Local description set with answer.");
 
       // Send answer back to caller
       repository.sendAnswer({
         'to': from,
         'answer': {'sdp': answer.sdp, 'type': answer.type},
       });
+      print("Answer sent back to $from.");
+
+      _currentPartnerId = from;
+
+      // Add any queued ICE candidates that arrived before remote desc set
+      for (final candidate in _remoteIceCandidateQueue) {
+        await _peerConnection!.addCandidate(candidate);
+        print("Queued ICE candidate added.");
+      }
+      _remoteIceCandidateQueue.clear();
     } catch (e) {
+      print("Failed to handle received offer: $e");
       emit(VideoError('Failed to handle received offer: $e'));
     }
   }
@@ -295,13 +349,27 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     Emitter<VideoState> emit,
   ) async {
     try {
-      if (_peerConnection == null) return;
+      if (_peerConnection == null) {
+        print("Peer connection not established when answer received.");
+        return;
+      }
 
       final answer = event.answer['answer'];
+      print("Answer received: $answer");
+
       await _peerConnection!.setRemoteDescription(
         RTCSessionDescription(answer['sdp'], answer['type']),
       );
+      print("Remote description set with answer.");
+
+      // Add any queued ICE candidates that arrived before remote desc set
+      for (final candidate in _remoteIceCandidateQueue) {
+        await _peerConnection!.addCandidate(candidate);
+        print("Queued ICE candidate added.");
+      }
+      _remoteIceCandidateQueue.clear();
     } catch (e) {
+      print("Failed to handle received answer: $e");
       emit(VideoError('Failed to handle received answer: $e'));
     }
   }
@@ -311,37 +379,114 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     Emitter<VideoState> emit,
   ) async {
     try {
-      if (_peerConnection == null) return;
-
-      final candidate = event.candidate['candidate'];
-
-      await _peerConnection!.addCandidate(
-        RTCIceCandidate(
-          candidate['candidate'],
-          candidate['sdpMid'],
-          candidate['sdpMLineIndex'],
-        ),
+      final candidateMap = event.candidate['candidate'];
+      final candidate = RTCIceCandidate(
+        candidateMap['candidate'],
+        candidateMap['sdpMid'],
+        candidateMap['sdpMLineIndex'],
       );
+
+      if (_peerConnection == null) {
+        print("Peer connection not established, queuing ICE candidate.");
+        _remoteIceCandidateQueue.add(candidate);
+        return;
+      }
+
+      final remoteDesc = await _peerConnection!.getRemoteDescription();
+
+      // If remote description not set yet, queue the ICE candidate
+      if (remoteDesc == null) {
+        print("Remote description not set, queuing ICE candidate.");
+        _remoteIceCandidateQueue.add(candidate);
+        return;
+      }
+
+      print("ICE candidate received: ${candidateMap['candidate']}");
+      await _peerConnection!.addCandidate(candidate);
+      print("ICE candidate added to peer connection.");
     } catch (e) {
+      print("Failed to add ICE candidate: $e");
       emit(VideoError('Failed to add ICE candidate: $e'));
     }
   }
 
-  void _onCallEnded(CallEndedEvent event, Emitter<VideoState> emit) {
-    _peerConnection?.close();
-    _peerConnection = null;
-    _remoteStream = null;
+  void _onCallEnded(CallEndedEvent event, Emitter<VideoState> emit) async {
+    print("Call ended event handled.");
+    await _disposeCurrentSession();
     _currentPartnerId = null;
     emit(VideoCallEnded());
   }
 
   void _onWait(WaitEvent event, Emitter<VideoState> emit) {
-    print("Pleased wait...");
+    print("Waiting for match...");
     emit(VideoWaitingForMatch());
   }
 
   void _onSelfLoop(SelfLoopEvent event, Emitter<VideoState> emit) {
+    print("Self loop detected.");
     emit(VideoError("You are already connected on another device (self-loop)"));
+  }
+
+  void _setupPeerConnectionListeners() {
+    if (_peerConnection == null) return;
+
+    _peerConnection!.onIceCandidate = (candidate) {
+      if (candidate != null) {
+        print("New ICE candidate generated: ${candidate.candidate}");
+        repository.sendIceCandidate({
+          'candidate': {
+            'candidate': candidate.candidate,
+            'sdpMid': candidate.sdpMid,
+            'sdpMLineIndex': candidate.sdpMLineIndex,
+          },
+        });
+      }
+    };
+
+    _peerConnection!.onTrack = (event) {
+      print(
+        "Received remote track: ${event.track.kind} 999999999999999999999999999999999999999999999999999999",
+      );
+      _handleRemoteTrack(event);
+    };
+
+    _peerConnection!.onConnectionState = (state) {
+      print(
+        "Peer connection state: $state 88888888888888888888888888888888888888888888888888888888888",
+      );
+    };
+    _peerConnection!.onIceGatheringState = (RTCIceGatheringState state) {
+      print("ICE gathering state: $state");
+      if (state == RTCIceGatheringState.RTCIceGatheringStateComplete) {
+        print("ICE gathering complete.");
+        // Optionally notify UI or signaling here that ICE candidates gathering is done
+      }
+    };
+
+    _peerConnection!.onIceConnectionState = (state) {
+      print(
+        "ICE connection state: $state 1000101010101010101010100101010101101010101",
+      );
+    };
+  }
+
+  void _handleRemoteTrack(RTCTrackEvent event) {
+    MediaStream? remoteStream;
+
+    if (event.streams.isNotEmpty) {
+      remoteStream = event.streams.first;
+
+      // ✅ DO NOT manually add track, it’s already managed
+      add(RemoteStreamReceivedEvent(remoteStream));
+    } else {
+      // Rare case: no stream associated with the track
+      createLocalMediaStream('remoteStream').then((tempStream) {
+        tempStream.addTrack(
+          event.track,
+        ); // This is sometimes acceptable in fallback mode
+        add(RemoteStreamReceivedEvent(tempStream));
+      });
+    }
   }
 
   Future<void> _onMatchFound(
@@ -352,31 +497,58 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     final bool isCaller = partnerInfo['isCaller'] ?? false;
     final String partnerId = partnerInfo['partnerId'] ?? '';
 
-    print("match found");
-
-    if (_peerConnection == null) {
-      emit(VideoError('Peer connection not ready.'));
-      return;
-    }
-
-    if (!isCaller) {
-      // Not caller, wait for offer from other peer
-      emit(VideoWaitingForMatch());
-      return;
-    }
+    print("Match found with partnerId: $partnerId, isCaller: $isCaller");
 
     try {
-      // Caller creates offer, sets local description, and sends offer
+      await _disposeCurrentSession();
+
+      // Ensure local stream is loaded
+      if (_localStream == null) {
+        print("Local stream not available, loading local stream first...");
+        _localStream = await getLocalStreamUseCase.execute();
+        emit(VideoLocalStreamLoaded(_localStream!));
+      }
+
+      // Create or reuse peer connection
+      await _createPeerConnectionIfNeeded(emit);
+
+      // Log DTLS certificate fingerprints for debugging (optional)
+      // ...
+
+      _currentPartnerId = partnerId;
+
+      if (!isCaller) {
+        print("Not caller, waiting for offer from other peer.");
+        emit(VideoWaitingForMatch());
+        return;
+      }
+
+      // Caller creates offer and sets local description
       RTCSessionDescription offer = await _peerConnection!.createOffer();
+      print("Offer created: ${offer.sdp?.substring(0, 100)}...");
+
+      // Extract fingerprint from SDP offer for debug
+      final regex = RegExp(
+        r'a=fingerprint:sha-256 ([A-F0-9:]+)',
+        caseSensitive: false,
+      );
+      final match = regex.firstMatch(offer.sdp ?? '');
+      if (match != null) {
+        print("Fingerprint in SDP offer: ${match.group(1)}");
+      } else {
+        print("No fingerprint found in SDP offer.");
+      }
+
       await _peerConnection!.setLocalDescription(offer);
+      print("Local description set with offer.");
 
       repository.sendOffer({
         'to': partnerId,
         'offer': {'sdp': offer.sdp, 'type': offer.type},
       });
-
-      _currentPartnerId = partnerId;
+      print("Offer sent to $partnerId.");
     } catch (e) {
+      print("Failed to create or send offer: $e");
       emit(VideoError('Failed to create or send offer: $e'));
     }
   }
@@ -386,10 +558,15 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     Emitter<VideoState> emit,
   ) async {
     try {
+      print("Loading local media stream...");
       _localStream = await getLocalStreamUseCase.execute();
+      print(
+        "Local stream loaded with audio tracks: ${_localStream?.getAudioTracks().length}, video tracks: ${_localStream?.getVideoTracks().length}",
+      );
       emit(VideoLocalStreamLoaded(_localStream!));
     } catch (e) {
-      emit(VideoError('Failed to get local stream: $e'));
+      print("Failed to load local stream: $e");
+      emit(VideoError('Failed to load local stream: $e'));
     }
   }
 
@@ -397,50 +574,112 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     CreatePeerConnectionEvent event,
     Emitter<VideoState> emit,
   ) async {
+    await _createPeerConnectionIfNeeded(emit);
+  }
+
+  // New method to safely create or reuse peer connection
+  Future<void> _createPeerConnectionIfNeeded(Emitter<VideoState> emit) async {
+    if (_peerConnection != null) {
+      print("Peer connection already exists, reusing it.");
+      emit(VideoPeerConnectionReady(_peerConnection!));
+      return;
+    }
+
     try {
-      print(
-        "Ok now the peer connection is running.............................................",
-      );
+      // Dispose any existing session for safety
+      await _disposeCurrentSession();
+
+      if (_localStream == null) {
+        print("Local stream not available, loading local stream first...");
+        _localStream = await getLocalStreamUseCase.execute();
+        emit(VideoLocalStreamLoaded(_localStream!));
+      }
+
+      print("Creating new peer connection...");
       _peerConnection = await createPeerConnectionUseCase.execute(
-        event.localStream,
+        _localStream!,
       );
-
-      // Listen for new ICE candidates and send them via signaling
-      _peerConnection!.onIceCandidate = (candidate) {
-        repository.sendIceCandidate({
-          'candidate': {
-            'candidate': candidate.candidate,
-            'sdpMid': candidate.sdpMid,
-            'sdpMLineIndex': candidate.sdpMLineIndex,
-          },
-        });
-      };
-
-      // Listen for remote media streams
-      _peerConnection!.onTrack = (event) {
-        if (event.streams.isNotEmpty) {
-          _remoteStream = event.streams[0];
-          emit(VideoRemoteStreamUpdated(_remoteStream));
-        }
-      };
-
+      _setupPeerConnectionListeners();
       emit(VideoPeerConnectionReady(_peerConnection!));
     } catch (e) {
+      print("Failed to create peer connection: $e");
       emit(VideoError('Failed to create peer connection: $e'));
     }
   }
 
+  Future<void> _disposeCurrentSession() async {
+    print("Disposing current session...");
+    try {
+      if (_peerConnection != null) {
+        await _peerConnection!.close();
+        await _peerConnection!.dispose();
+        _peerConnection = null;
+        print("Peer connection disposed.");
+      }
+
+      if (_localStream != null) {
+        await _localStream!.dispose();
+        _localStream = null;
+        print("Local stream disposed.");
+      }
+
+      if (_remoteStream != null) {
+        await _remoteStream!.dispose();
+        _remoteStream = null;
+        print("Remote stream disposed.");
+      }
+
+      _remoteIceCandidateQueue.clear();
+    } catch (e) {
+      print("Error disposing session: $e");
+    }
+  }
+
+  // #################### CHAT #############
+  Future<void> _onSendChatMessage(
+    SendChatMessageEvent event,
+    Emitter<VideoState> emit,
+  ) async {
+    try {
+      if (_currentPartnerId == null) {
+        emit(VideoError("No active call partner to send message"));
+        return;
+      }
+
+      print("Sending chat message to $_currentPartnerId: ${event.message}");
+      await repository.sendChatMessage(
+        toUserId: _currentPartnerId!,
+        message: event.message,
+      );
+
+      // Optionally emit a state for sent message confirmation
+    } catch (e) {
+      emit(VideoError("Failed to send chat message: $e"));
+    }
+  }
+
+  void _onReceiveChatMessage(
+    ReceiveChatMessageEvent event,
+    Emitter<VideoState> emit,
+  ) {
+    print("Chat message received from ${event.fromUserId}: ${event.message}");
+    emit(ChatMessageReceivedState(event.fromUserId, event.message));
+  }
+
   @override
-  Future<void> close() {
-    _offerSub.cancel();
-    _answerSub.cancel();
-    _iceCandidateSub.cancel();
-    _callEndedSub.cancel();
-    _waitSub.cancel();
-    _selfLoopSub.cancel();
-    _matchFoundSub.cancel();
-    _onlineUserSub.cancel();
+  Future<void> close() async {
+    await _disposeCurrentSession();
+
+    await _answerSub.cancel();
+    await _iceCandidateSub.cancel();
+    await _callEndedSub.cancel();
+    await _waitSub.cancel();
+    await _selfLoopSub.cancel();
+    await _matchFoundSub.cancel();
+    await _onlineUserSub.cancel();
+
     _sensorService.dispose();
+
     return super.close();
   }
 }

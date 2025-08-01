@@ -7,7 +7,7 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
 
-  // Optional: Internal callbacks (if needed by Bloc setup)
+  // Internal callbacks
   void Function(Map<String, dynamic>)? _onMatchFound;
   void Function(Map<String, dynamic>)? _onOfferReceived;
   void Function(Map<String, dynamic>)? _onAnswerReceived;
@@ -19,11 +19,13 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
   void Function(String)? _onSuccess;
   void Function(int)? _onOnlineUsersCount;
 
+  // Chat message callback
+  void Function(Map<String, dynamic>)? _onChatMessageReceived;
+
   @override
   void initialize({String? jwt}) {
     _socket = IO.io(
-      // 'http://10.0.2.2:8000/video',
-      'http://192.168.101.3:8000/video',
+      'http://192.168.101.2:8000/video',
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
@@ -55,7 +57,7 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
     });
 
     _socket.on('user:call-ended:try:for:other', (_) {
-      _onCallEnded?.call(); // Optional: separate retry callback if needed
+      _onCallEnded?.call();
     });
 
     _socket.on('self-loop', (_) {
@@ -90,6 +92,13 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
     _socket.on('onlineUsersCount', (data) {
       final count = data['count'];
       _onOnlineUsersCount?.call(count is int ? count : 0);
+    });
+
+    // Chat message listener
+    _socket.on('chat-message', (data) {
+      if (data != null && _onChatMessageReceived != null) {
+        _onChatMessageReceived!(Map<String, dynamic>.from(data));
+      }
     });
   }
 
@@ -150,8 +159,7 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
       ],
     };
 
-    // ✅ Call the actual flutter_webrtc function directly
-    final pc = await createPeerConnection(config); // Don't shadow this name
+    final pc = await createPeerConnection(config);
 
     localStream.getTracks().forEach((track) {
       pc.addTrack(track, localStream);
@@ -172,8 +180,6 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
   void emitGetOnlineUserCount(void Function(int) callback) {
     _socket.emit('onlineUsersCount');
   }
-
-  // Attach event handlers — these get called from the Bloc
 
   @override
   void onMatchFound(void Function(Map<String, dynamic>) handler) {
@@ -218,5 +224,20 @@ class VideoCallDataSourceImpl implements IVideoCallDataSource {
   @override
   void onSuccess(void Function(String) handler) {
     _onSuccess = handler;
+  }
+
+  // Chat message event listener setter
+  @override
+  void onChatMessageReceived(void Function(Map<String, dynamic>) handler) {
+    _onChatMessageReceived = handler;
+  }
+
+  // Send chat message implementation
+  @override
+  Future<void> sendChatMessage({
+    required String toUserId,
+    required String message,
+  }) async {
+    _socket.emit('chat-message', {'toUserId': toUserId, 'message': message});
   }
 }

@@ -15,7 +15,7 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   final List<IconData> icons = [Icons.videocam, Icons.person];
-  final List<String> labels = ["Video", "Profile"];
+  final List<String> labels = ["Video", "Profile", "Chat"];
 
   @override
   Widget build(BuildContext context) {
