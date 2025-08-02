@@ -394,7 +394,8 @@ class _VideoCallViewState extends State<VideoCallView>
                                                 color: Colors.blueGrey
                                                     .withOpacity(0.2),
                                                 child: RTCVideoView(
-                                                  _remoteRenderer,
+                                                  // test123
+                                                  _localRenderer,
                                                   key: UniqueKey(),
                                                   objectFit:
                                                       RTCVideoViewObjectFit
