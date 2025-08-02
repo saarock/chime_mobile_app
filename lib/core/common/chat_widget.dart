@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:chime/features/video-call/presentation/view_model/video_state.dart';
 
 class ChatMessagesWidget extends StatefulWidget {
-  const ChatMessagesWidget({Key? key}) : super(key: key);
+  const ChatMessagesWidget({super.key});
 
   @override
   State<ChatMessagesWidget> createState() => _ChatMessagesWidgetState();

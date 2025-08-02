@@ -37,12 +37,10 @@ class TestableLoginViewModel extends LoginViewModel {
   final UserLocalDatasource mockLocalDatasource;
 
   TestableLoginViewModel(
-    UserLoginWithGoogleUsecase loginUsecase,
-    UserVerifyUsecase verifyUsecase,
+    super.loginUsecase,
+    super.verifyUsecase,
     this.mockLocalDatasource,
   ) : super(
-        loginUsecase,
-        verifyUsecase,
         shouldNavigate: false, // disable navigation in tests
       );
 

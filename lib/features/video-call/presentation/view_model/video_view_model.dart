@@ -431,16 +431,14 @@ class VideoBloc extends Bloc<VideoEvent, VideoState> {
     if (_peerConnection == null) return;
 
     _peerConnection!.onIceCandidate = (candidate) {
-      if (candidate != null) {
-        print("New ICE candidate generated: ${candidate.candidate}");
-        repository.sendIceCandidate({
-          'candidate': {
-            'candidate': candidate.candidate,
-            'sdpMid': candidate.sdpMid,
-            'sdpMLineIndex': candidate.sdpMLineIndex,
-          },
-        });
-      }
+      print("New ICE candidate generated: ${candidate.candidate}");
+      repository.sendIceCandidate({
+        'candidate': {
+          'candidate': candidate.candidate,
+          'sdpMid': candidate.sdpMid,
+          'sdpMLineIndex': candidate.sdpMLineIndex,
+        },
+      });
     };
 
     _peerConnection!.onTrack = (event) {

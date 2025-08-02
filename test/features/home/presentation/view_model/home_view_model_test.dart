@@ -5,7 +5,6 @@ import 'package:chime/features/video-call/presentation/view_model/video_view_mod
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:bloc_test/bloc_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 import 'package:chime/features/home/presentation/view_model/home_view_model.dart';
 import 'package:chime/features/home/presentation/view_model/home_state.dart';

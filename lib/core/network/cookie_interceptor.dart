@@ -6,7 +6,7 @@ class CookieInterceptor extends Interceptor {
   CookieInterceptor({required this.getAccessToken});
 
   @override
-  void onRequest(
+  Future<void> onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {

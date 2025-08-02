@@ -7,9 +7,9 @@ void main() {
     WidgetTester tester,
   ) async {
     int selectedIndex = 0;
-    final onDestinationSelected = (int index) {
+    onDestinationSelected(int index) {
       selectedIndex = index;
-    };
+    }
 
     await tester.pumpWidget(
       MaterialApp(
